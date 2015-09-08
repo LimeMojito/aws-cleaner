@@ -7,17 +7,33 @@ package com.limemojito.aws.cleaner;/*
  */
 
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.mockito.Mock;
+import org.mockito.runners.MockitoJUnitRunner;
 
+import static org.mockito.Mockito.when;
+
+@RunWith(MockitoJUnitRunner.class)
 public class MainTest {
+
+    @Mock
+    private ResourceCleaner cleaner;
 
     @Test
     public void shouldCallCleanEnvironment() throws Exception {
-        Main main = new Main();
+        when(cleaner.getName()).thenReturn("Test");
+
+        Main main = new Main(cleaner);
         main.cleanEnvironment("LOCAL");
     }
 
     @Test(expected = IllegalStateException.class)
     public void shouldThrowExceptionIfNoEnvironmentSet() throws Exception {
-        Main.main(new String[0]);
+        Main.main();
+    }
+
+    @Test(expected = IllegalStateException.class)
+    public void shouldThrowExceptionOnIllegalEnvironment() throws Exception {
+        Main.main("PROD");
     }
 }

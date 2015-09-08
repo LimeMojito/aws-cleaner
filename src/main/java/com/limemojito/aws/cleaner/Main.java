@@ -11,26 +11,51 @@ package com.limemojito.aws.cleaner;
 import com.limemojito.aws.cleaner.config.CleanerConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.context.support.AbstractApplicationContext;
 import org.springframework.stereotype.Service;
 
+import static com.limemojito.aws.cleaner.ResourceCleaner.DEV_ENVIRONMENT;
+import static com.limemojito.aws.cleaner.ResourceCleaner.LOCAL_ENVIRONMENT;
+import static java.lang.String.format;
+
 @Service
 public class Main {
     private static final Logger LOGGER = LoggerFactory.getLogger(Main.class);
+    private final ResourceCleaner[] resourceCleaners;
+
+    @Autowired
+    public Main(ResourceCleaner... resourceCleaners) {
+        this.resourceCleaners = resourceCleaners;
+    }
 
     public static void main(String... args) {
         if (args.length < 1) {
             throw new IllegalStateException("Arguments to main need to include the environment");
         }
         LOGGER.info("Initialising");
+        final String environment = args[0];
+        verifyEnvironment(environment);
+
         AbstractApplicationContext context = new AnnotationConfigApplicationContext(CleanerConfig.class);
         context.registerShutdownHook();
         Main main = context.getBean(Main.class);
-        main.cleanEnvironment(args[0]);
+        main.cleanEnvironment(environment);
+    }
+
+    private static void verifyEnvironment(String environment) {
+        if (!(LOCAL_ENVIRONMENT.equals(environment) || DEV_ENVIRONMENT.equals(environment))) {
+            throw new IllegalStateException(format("Environment %s is not supported", environment));
+        }
     }
 
     public void cleanEnvironment(String environment) {
         LOGGER.info("Cleaning AWS resources in {}", environment);
+        for (ResourceCleaner resourceCleaner : resourceCleaners) {
+            LOGGER.info("Processing {}", resourceCleaner.getName());
+            resourceCleaner.clean(environment);
+        }
+        LOGGER.debug("Resource cleaning completed");
     }
 }
