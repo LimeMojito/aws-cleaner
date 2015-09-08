@@ -16,8 +16,6 @@ import org.springframework.context.annotation.AnnotationConfigApplicationContext
 import org.springframework.context.support.AbstractApplicationContext;
 import org.springframework.stereotype.Service;
 
-import static com.limemojito.aws.cleaner.ResourceCleaner.DEV_ENVIRONMENT;
-import static com.limemojito.aws.cleaner.ResourceCleaner.LOCAL_ENVIRONMENT;
 import static java.lang.String.format;
 
 @Service
@@ -45,7 +43,8 @@ public class Main {
     }
 
     private static void verifyEnvironment(String environment) {
-        if (!(LOCAL_ENVIRONMENT.equals(environment) || DEV_ENVIRONMENT.equals(environment))) {
+        if (!(ResourceCleaner.LOCAL_ENVIRONMENT.equals(environment)
+                || ResourceCleaner.DEV_ENVIRONMENT.equals(environment))) {
             throw new IllegalStateException(format("Environment %s is not supported", environment));
         }
     }
