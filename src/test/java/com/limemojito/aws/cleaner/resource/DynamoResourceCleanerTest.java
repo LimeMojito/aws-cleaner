@@ -8,7 +8,6 @@
 
 package com.limemojito.aws.cleaner.resource;
 
-import com.amazonaws.AmazonServiceException;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient;
 import com.amazonaws.services.dynamodbv2.model.ListTablesResult;
 import com.limemojito.aws.cleaner.ResourceCleaner;
@@ -24,7 +23,7 @@ import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.*;
 
 @RunWith(MockitoJUnitRunner.class)
-public class DynamoResourceCleanerTest {
+public class DynamoResourceCleanerTest extends AwsResourceCleanerUnitTestCase {
 
     @Mock
     private AmazonDynamoDBClient client;
@@ -60,12 +59,6 @@ public class DynamoResourceCleanerTest {
         verify(client, times(2)).deleteTable("LOCAL-TABLE");
         verify(client, times(0)).deleteTable("DEV-TABLE");
         verify(client, times(0)).deleteTable("PROD-TABLE");
-    }
-
-    private AmazonServiceException createThrottleException() {
-        final AmazonServiceException testThrottle = new AmazonServiceException("TestThrottle");
-        testThrottle.setErrorCode("Throttling");
-        return testThrottle;
     }
 
     private ListTablesResult expectedListTables() {
