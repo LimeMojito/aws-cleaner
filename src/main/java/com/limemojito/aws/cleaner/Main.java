@@ -11,7 +11,6 @@ package com.limemojito.aws.cleaner;
 import com.limemojito.aws.cleaner.config.CleanerConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.context.support.AbstractApplicationContext;
 import org.springframework.stereotype.Service;
