@@ -24,6 +24,7 @@
 
     <properties>
         <version.aws.java.sdk>1.10.16</version.aws.java.sdk>
+        <coverage.exclude.pattern.1>**BaseAwsResourceCleaner</coverage.exclude.pattern.1>
     </properties>
 
     <dependencies>
