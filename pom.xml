@@ -22,6 +22,10 @@
         <relativePath/>
     </parent>
 
+    <properties>
+        <version.aws.java.sdk>1.10.16</version.aws.java.sdk>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>org.springframework</groupId>
@@ -38,6 +42,11 @@
         <dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.amazonaws</groupId>
+            <artifactId>aws-java-sdk-dynamodb</artifactId>
+            <version>${version.aws.java.sdk}</version>
         </dependency>
     </dependencies>
 </project>
