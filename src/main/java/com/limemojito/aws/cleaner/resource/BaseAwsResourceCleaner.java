@@ -31,6 +31,9 @@ public abstract class BaseAwsResourceCleaner implements ResourceCleaner {
                 }
                 action.performAction();
             }
+            else {
+                throw e;
+            }
         }
     }
 

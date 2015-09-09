@@ -9,11 +9,19 @@
 package com.limemojito.aws.cleaner.resource;
 
 import com.amazonaws.AmazonServiceException;
+import com.amazonaws.services.s3.model.AmazonS3Exception;
 
 public abstract class AwsResourceCleanerUnitTestCase {
     protected AmazonServiceException createThrottleException() {
         final AmazonServiceException testThrottle = new AmazonServiceException("TestThrottle");
         testThrottle.setErrorCode("Throttling");
         return testThrottle;
+    }
+
+    protected AmazonS3Exception createsS3NotEmptyException() {
+        final AmazonS3Exception notEmpty = new AmazonS3Exception("not empty");
+        notEmpty.setStatusCode(409);
+        notEmpty.setErrorCode("BucketNotEmpty");
+        return notEmpty;
     }
 }
