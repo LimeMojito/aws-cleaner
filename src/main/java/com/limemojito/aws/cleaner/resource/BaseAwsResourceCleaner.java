@@ -30,8 +30,7 @@ public abstract class BaseAwsResourceCleaner implements ResourceCleaner {
                     LOGGER.warn("Interrupted");
                 }
                 action.performAction();
-            }
-            else {
+            } else {
                 throw e;
             }
         }
