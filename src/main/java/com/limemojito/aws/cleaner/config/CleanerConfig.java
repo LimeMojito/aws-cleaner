@@ -14,6 +14,7 @@ import com.amazonaws.regions.Region;
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient;
 import com.amazonaws.services.elasticbeanstalk.AWSElasticBeanstalkClient;
+import com.amazonaws.services.s3.AmazonS3Client;
 import com.limemojito.aws.cleaner.Main;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
@@ -45,5 +46,12 @@ public class CleanerConfig {
         final AWSElasticBeanstalkClient awsElasticBeanstalkClient = new AWSElasticBeanstalkClient(awsCredentials);
         awsElasticBeanstalkClient.setRegion(region);
         return awsElasticBeanstalkClient;
+    }
+
+    @Bean
+    public AmazonS3Client s3Client() {
+        final AmazonS3Client s3Client = new AmazonS3Client(awsCredentials);
+        s3Client.setRegion(region);
+        return s3Client;
     }
 }

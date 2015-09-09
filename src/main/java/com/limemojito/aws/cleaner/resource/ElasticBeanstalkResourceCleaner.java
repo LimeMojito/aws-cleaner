@@ -20,12 +20,12 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 
 @Service
-public class ElasticBeanstalkCleaner extends BaseAwsResourceCleaner {
-    private static final Logger LOGGER = LoggerFactory.getLogger(ElasticBeanstalkCleaner.class);
+public class ElasticBeanstalkResourceCleaner extends BaseAwsResourceCleaner {
+    private static final Logger LOGGER = LoggerFactory.getLogger(ElasticBeanstalkResourceCleaner.class);
     private final AWSElasticBeanstalkClient client;
 
     @Autowired
-    public ElasticBeanstalkCleaner(AWSElasticBeanstalkClient client) {
+    public ElasticBeanstalkResourceCleaner(AWSElasticBeanstalkClient client) {
         this.client = client;
     }
 

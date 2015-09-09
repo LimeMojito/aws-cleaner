@@ -36,7 +36,7 @@ public class ElasticBeanstalkResourceCleanerTest extends AwsResourceCleanerUnitT
 
     @Before
     public void setup() {
-        cleaner = new ElasticBeanstalkCleaner(client);
+        cleaner = new ElasticBeanstalkResourceCleaner(client);
     }
 
     @Test
