@@ -41,9 +41,11 @@ public class ElasticBeanstalkResourceCleaner extends BaseAwsResourceCleaner {
         final List<EnvironmentDescription> environments = result.getEnvironments();
         LOGGER.debug("{} environments found", environments.size());
         environments
-              .stream()
-              .filter(environmentDescription -> environmentDescription.getEnvironmentName().startsWith(environment))
-              .forEach(environmentDescription -> performWithThrottle(() -> terminateEnvironment(environmentDescription)));
+                .stream()
+                .filter(environmentDescription -> (environmentDescription.getEnvironmentName()
+                                                                         .startsWith(environment) && environmentDescription.getStatus()
+                                                                                                                           .equalsIgnoreCase("Ready")))
+                .forEach(environmentDescription -> performWithThrottle(() -> terminateEnvironment(environmentDescription)));
     }
 
     private void terminateEnvironment(EnvironmentDescription environmentDescription) {

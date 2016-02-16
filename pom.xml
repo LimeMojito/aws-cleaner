@@ -23,7 +23,7 @@
     </parent>
 
     <properties>
-        <version.aws.java.sdk>1.10.16</version.aws.java.sdk>
+        <version.aws.java.sdk>1.10.52</version.aws.java.sdk>
         <coverage.exclude.pattern.1>**BaseAwsResourceCleaner</coverage.exclude.pattern.1>
     </properties>
 
@@ -58,6 +58,10 @@
 
     <dependencies>
         <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-lang3</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-context</artifactId>
         </dependency>
@@ -81,6 +85,11 @@
         <dependency>
             <groupId>com.amazonaws</groupId>
             <artifactId>aws-java-sdk-elasticbeanstalk</artifactId>
+            <version>${version.aws.java.sdk}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.amazonaws</groupId>
+            <artifactId>aws-java-sdk-sns</artifactId>
             <version>${version.aws.java.sdk}</version>
         </dependency>
     </dependencies>

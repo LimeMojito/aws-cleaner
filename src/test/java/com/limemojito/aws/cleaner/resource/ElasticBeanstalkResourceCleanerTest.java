@@ -11,6 +11,7 @@ package com.limemojito.aws.cleaner.resource;
 import com.amazonaws.services.elasticbeanstalk.AWSElasticBeanstalkClient;
 import com.amazonaws.services.elasticbeanstalk.model.DescribeEnvironmentsResult;
 import com.amazonaws.services.elasticbeanstalk.model.EnvironmentDescription;
+import com.amazonaws.services.elasticbeanstalk.model.EnvironmentStatus;
 import com.amazonaws.services.elasticbeanstalk.model.TerminateEnvironmentRequest;
 import com.limemojito.aws.cleaner.ResourceCleaner;
 import org.junit.Before;
@@ -22,6 +23,7 @@ import org.mockito.runners.MockitoJUnitRunner;
 import java.util.Collection;
 import java.util.LinkedList;
 
+import static com.amazonaws.services.elasticbeanstalk.model.EnvironmentStatus.Ready;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.*;
@@ -71,9 +73,9 @@ public class ElasticBeanstalkResourceCleanerTest extends AwsResourceCleanerUnitT
 
     private DescribeEnvironmentsResult createExampleEnvironments() {
         final Collection<EnvironmentDescription> environments = new LinkedList<>();
-        environments.add(new EnvironmentDescription().withEnvironmentName("LOCAL"));
-        environments.add(new EnvironmentDescription().withEnvironmentName("DEV"));
-        environments.add(new EnvironmentDescription().withEnvironmentName("PROD"));
+        environments.add(new EnvironmentDescription().withEnvironmentName("LOCAL").withStatus(Ready));
+        environments.add(new EnvironmentDescription().withEnvironmentName("DEV").withStatus(Ready));
+        environments.add(new EnvironmentDescription().withEnvironmentName("PROD").withStatus(Ready));
         return new DescribeEnvironmentsResult().withEnvironments(environments);
     }
 }
