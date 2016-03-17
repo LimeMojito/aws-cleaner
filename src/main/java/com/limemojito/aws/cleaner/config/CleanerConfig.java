@@ -13,6 +13,7 @@ import com.amazonaws.auth.PropertiesCredentials;
 import com.amazonaws.regions.Region;
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient;
+import com.amazonaws.services.elasticache.AmazonElastiCacheClient;
 import com.amazonaws.services.elasticbeanstalk.AWSElasticBeanstalkClient;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.sns.AmazonSNSClient;
@@ -61,5 +62,12 @@ public class CleanerConfig {
         final AmazonSNSClient snsClient = new AmazonSNSClient(awsCredentials);
         snsClient.setRegion(region);
         return snsClient;
+    }
+
+    @Bean
+    public AmazonElastiCacheClient elastiCacheClient() {
+        final AmazonElastiCacheClient elastiCacheClient = new AmazonElastiCacheClient(awsCredentials);
+        elastiCacheClient.setRegion(region);
+        return elastiCacheClient;
     }
 }

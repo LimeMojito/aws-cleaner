@@ -25,6 +25,7 @@
     <properties>
         <version.aws.java.sdk>1.10.52</version.aws.java.sdk>
         <coverage.exclude.pattern.1>**BaseAwsResourceCleaner</coverage.exclude.pattern.1>
+        <coverage.exclude.pattern.2>**ElasticacheResourceCleaner</coverage.exclude.pattern.2>
     </properties>
 
     <build>
@@ -90,6 +91,11 @@
         <dependency>
             <groupId>com.amazonaws</groupId>
             <artifactId>aws-java-sdk-sns</artifactId>
+            <version>${version.aws.java.sdk}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.amazonaws</groupId>
+            <artifactId>aws-java-sdk-elasticache</artifactId>
             <version>${version.aws.java.sdk}</version>
         </dependency>
     </dependencies>
