@@ -19,6 +19,8 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 
+import static java.lang.String.format;
+
 @Service
 public class ElasticacheResourceCleaner extends BaseAwsResourceCleaner {
     private static final Logger LOGGER = LoggerFactory.getLogger(ElasticacheResourceCleaner.class);
@@ -40,11 +42,11 @@ public class ElasticacheResourceCleaner extends BaseAwsResourceCleaner {
         DescribeCacheClustersResult results = client.describeCacheClusters();
         final List<CacheCluster> cacheClusters = results.getCacheClusters();
         LOGGER.debug("Found {} clusters", cacheClusters.size());
-        final String lowerEnvironment = environment.toLowerCase();
+        final String clusterPrefix = ALL_ENVIRONMENTS.equals(environment) ? "" : format("%s-", environment).toLowerCase();
 
         cacheClusters.stream()
                      .filter(cacheCluster -> (cacheCluster.getCacheClusterId()
-                                                          .startsWith(lowerEnvironment) && "available".equals(cacheCluster.getCacheClusterStatus())))
+                                                          .startsWith(clusterPrefix) && "available".equals(cacheCluster.getCacheClusterStatus())))
                      .forEach(cacheCluster1 -> performWithThrottle(() -> {
                          final String cacheClusterId = cacheCluster1.getCacheClusterId();
                          LOGGER.info("Removing {} cache cluster", cacheClusterId);

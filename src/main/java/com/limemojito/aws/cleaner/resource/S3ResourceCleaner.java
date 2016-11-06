@@ -19,6 +19,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static java.lang.String.format;
+
 @Service
 public class S3ResourceCleaner extends BaseAwsResourceCleaner {
     private static final Logger LOGGER = LoggerFactory.getLogger(S3ResourceCleaner.class);
@@ -39,7 +41,7 @@ public class S3ResourceCleaner extends BaseAwsResourceCleaner {
         LOGGER.debug("Listing s3 buckets");
         final List<Bucket> buckets = client.listBuckets();
         LOGGER.debug("Found {} buckets", buckets.size());
-        final String bucketEnvironment = String.format("-%s-", environment.toLowerCase());
+        final String bucketEnvironment = ALL_ENVIRONMENTS.equals(environment) ? "" : format("-%s-", environment.toLowerCase());
         buckets.stream()
                .filter(bucket -> bucket.getName().contains(bucketEnvironment))
                .forEach(bucket -> performWithThrottle(() -> deleteBucket(bucket)));

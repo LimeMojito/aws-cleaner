@@ -17,6 +17,8 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 
+import static java.lang.String.format;
+
 @Service
 public class DynamoResourceCleaner extends BaseAwsResourceCleaner {
     private static final Logger LOGGER = LoggerFactory.getLogger(DynamoResourceCleaner.class);
@@ -38,7 +40,7 @@ public class DynamoResourceCleaner extends BaseAwsResourceCleaner {
         final ListTablesResult listTablesResult = dbClient.listTables();
         final List<String> tableNames = listTablesResult.getTableNames();
         LOGGER.debug("Scanning {} tables", tableNames.size());
-        final String tablePrefix = String.format("%s-", environment);
+        final String tablePrefix = ALL_ENVIRONMENTS.equals(environment) ? "" : format("%s-", environment);
         tableNames.stream().filter(s -> s.startsWith(tablePrefix)).forEach((tableName) -> performWithThrottle(() -> {
             LOGGER.debug("Deleting table {}", tableName);
             dbClient.deleteTable(tableName);
