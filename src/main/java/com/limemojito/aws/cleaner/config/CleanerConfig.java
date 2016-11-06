@@ -12,6 +12,7 @@ import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
 import com.amazonaws.regions.Region;
 import com.amazonaws.regions.Regions;
+import com.amazonaws.services.cloudformation.AmazonCloudFormationClient;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient;
 import com.amazonaws.services.elasticache.AmazonElastiCacheClient;
 import com.amazonaws.services.elasticbeanstalk.AWSElasticBeanstalkClient;
@@ -79,5 +80,12 @@ public class CleanerConfig {
         final AmazonElastiCacheClient elastiCacheClient = new AmazonElastiCacheClient(credentialsProvider);
         elastiCacheClient.setRegion(defaultRegion);
         return elastiCacheClient;
+    }
+
+    @Bean
+    public AmazonCloudFormationClient cloudFormationClient(AWSCredentialsProvider credentialsProvider) {
+        final AmazonCloudFormationClient client = new AmazonCloudFormationClient(credentialsProvider);
+        client.setRegion(defaultRegion);
+        return client;
     }
 }

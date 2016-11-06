@@ -58,8 +58,8 @@ public class Main {
 
     private void verifyEnvironment(String environment) {
         if (!(ResourceCleaner.LOCAL_ENVIRONMENT.equals(environment)
-                || ResourceCleaner.DEV_ENVIRONMENT.equals(environment))
-                || ResourceCleaner.ALL_ENVIRONMENTS.equals(environment)) {
+                || ResourceCleaner.DEV_ENVIRONMENT.equals(environment)
+                || ResourceCleaner.ALL_ENVIRONMENTS.equals(environment))) {
             throw new IllegalStateException(format("Environment %s is not supported", environment));
         }
     }

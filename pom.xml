@@ -24,6 +24,7 @@
         <version.aws.java.sdk>1.11.52</version.aws.java.sdk>
         <coverage.exclude.pattern.1>**BaseAwsResourceCleaner</coverage.exclude.pattern.1>
         <coverage.exclude.pattern.2>**ElasticacheResourceCleaner</coverage.exclude.pattern.2>
+        <coverage.exclude.pattern.3>**CloudFormationResourceCleaner</coverage.exclude.pattern.3>
     </properties>
 
     <build>
@@ -89,6 +90,11 @@
         <dependency>
             <groupId>com.amazonaws</groupId>
             <artifactId>aws-java-sdk-iam</artifactId>
+            <version>${version.aws.java.sdk}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.amazonaws</groupId>
+            <artifactId>aws-java-sdk-cloudformation</artifactId>
             <version>${version.aws.java.sdk}</version>
         </dependency>
         <dependency>

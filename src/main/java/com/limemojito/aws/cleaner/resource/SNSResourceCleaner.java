@@ -43,13 +43,16 @@ public class SNSResourceCleaner extends BaseAwsResourceCleaner {
             }
         }
             LOGGER.debug("Listing platforms");
-            for (PlatformApplication platform : client.listPlatformApplications().getPlatformApplications()) {
+        final ListPlatformApplicationsResult listPlatformApplicationsResult = client.listPlatformApplications();
+        if (listPlatformApplicationsResult != null) {
+            for (PlatformApplication platform : listPlatformApplicationsResult.getPlatformApplications()) {
                 final String applicationArn = platform.getPlatformApplicationArn();
                 final String environmentMarker = ALL_ENVIRONMENTS.equals(environment) ? "" : "_" + DEV_ENVIRONMENT;
                 if (containsIgnoreCase(applicationArn, environmentMarker)) {
                     removeApplicationEndpoints(applicationArn);
                 }
             }
+        }
     }
 
     private void removeApplicationEndpoints(String applicationArn) {

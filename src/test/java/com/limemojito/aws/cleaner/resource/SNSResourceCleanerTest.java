@@ -30,13 +30,6 @@ public class SNSResourceCleanerTest extends AwsResourceCleanerUnitTestCase {
     private AmazonSNSClient snsClient;
 
     @Test
-    public void shouldCleanLocalSNSOk() throws Exception {
-        performTopicSubscriptionDelete(LOCAL_ENVIRONMENT, LOCAL_TOPIC);
-
-        verify(snsClient, times(0)).listPlatformApplications();
-    }
-
-    @Test
     public void shouldCleanDevOk() throws Exception {
         when(snsClient.listPlatformApplications()).thenReturn(platforms());
         when(snsClient.listEndpointsByPlatformApplication(any(ListEndpointsByPlatformApplicationRequest.class))).thenReturn(endpoints());
