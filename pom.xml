@@ -18,12 +18,12 @@
     <parent>
         <groupId>com.limemojito</groupId>
         <artifactId>jar-development</artifactId>
-        <version>1.0.15</version>
+        <version>1.0.18</version>
         <relativePath/>
     </parent>
 
     <properties>
-        <version.aws.java.sdk>1.10.52</version.aws.java.sdk>
+        <version.aws.java.sdk>1.11.52</version.aws.java.sdk>
         <coverage.exclude.pattern.1>**BaseAwsResourceCleaner</coverage.exclude.pattern.1>
         <coverage.exclude.pattern.2>**ElasticacheResourceCleaner</coverage.exclude.pattern.2>
     </properties>
@@ -77,6 +77,11 @@
         <dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.amazonaws</groupId>
+            <artifactId>aws-java-sdk-iam</artifactId>
+            <version>${version.aws.java.sdk}</version>
         </dependency>
         <dependency>
             <groupId>com.amazonaws</groupId>

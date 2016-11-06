@@ -8,13 +8,15 @@
 
 package com.limemojito.aws.cleaner.config;
 
-import com.amazonaws.auth.AWSCredentials;
-import com.amazonaws.auth.PropertiesCredentials;
+import com.amazonaws.auth.AWSCredentialsProvider;
+import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
 import com.amazonaws.regions.Region;
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient;
 import com.amazonaws.services.elasticache.AmazonElastiCacheClient;
 import com.amazonaws.services.elasticbeanstalk.AWSElasticBeanstalkClient;
+import com.amazonaws.services.identitymanagement.AmazonIdentityManagement;
+import com.amazonaws.services.identitymanagement.AmazonIdentityManagementClient;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.sns.AmazonSNSClient;
 import com.limemojito.aws.cleaner.Main;
@@ -28,46 +30,54 @@ import java.io.IOException;
 @ComponentScan(basePackageClasses = Main.class)
 public class CleanerConfig {
 
-    private final Region region;
-    private final AWSCredentials awsCredentials;
+    private final Region defaultRegion;
 
     public CleanerConfig() throws IOException {
-        awsCredentials = new PropertiesCredentials(getClass().getResourceAsStream("/aws-credentials.properties"));
-        region = Region.getRegion(Regions.US_WEST_2);
+        defaultRegion = Region.getRegion(Regions.US_WEST_2);
     }
 
     @Bean
-    public AmazonDynamoDBClient dynamoDBClient() {
-        final AmazonDynamoDBClient amazonDynamoDBClient = new AmazonDynamoDBClient(awsCredentials);
-        amazonDynamoDBClient.setRegion(region);
+    public AWSCredentialsProvider credentialsProvider() {
+        return new DefaultAWSCredentialsProviderChain();
+    }
+
+    @Bean
+    public AmazonIdentityManagement identityManagement(AWSCredentialsProvider credentialsProvider) {
+        return new AmazonIdentityManagementClient(credentialsProvider);
+    }
+
+    @Bean
+    public AmazonDynamoDBClient dynamoDBClient(AWSCredentialsProvider credentialsProvider) {
+        final AmazonDynamoDBClient amazonDynamoDBClient = new AmazonDynamoDBClient(credentialsProvider);
+        amazonDynamoDBClient.setRegion(defaultRegion);
         return amazonDynamoDBClient;
     }
 
     @Bean
-    public AWSElasticBeanstalkClient ebClient() {
-        final AWSElasticBeanstalkClient awsElasticBeanstalkClient = new AWSElasticBeanstalkClient(awsCredentials);
-        awsElasticBeanstalkClient.setRegion(region);
+    public AWSElasticBeanstalkClient ebClient(AWSCredentialsProvider credentialsProvider) {
+        final AWSElasticBeanstalkClient awsElasticBeanstalkClient = new AWSElasticBeanstalkClient(credentialsProvider);
+        awsElasticBeanstalkClient.setRegion(defaultRegion);
         return awsElasticBeanstalkClient;
     }
 
     @Bean
-    public AmazonS3Client s3Client() {
-        final AmazonS3Client s3Client = new AmazonS3Client(awsCredentials);
-        s3Client.setRegion(region);
+    public AmazonS3Client s3Client(AWSCredentialsProvider credentialsProvider) {
+        final AmazonS3Client s3Client = new AmazonS3Client(credentialsProvider);
+        s3Client.setRegion(defaultRegion);
         return s3Client;
     }
 
     @Bean
-    public AmazonSNSClient snsClient() {
-        final AmazonSNSClient snsClient = new AmazonSNSClient(awsCredentials);
-        snsClient.setRegion(region);
+    public AmazonSNSClient snsClient(AWSCredentialsProvider credentialsProvider) {
+        final AmazonSNSClient snsClient = new AmazonSNSClient(credentialsProvider);
+        snsClient.setRegion(defaultRegion);
         return snsClient;
     }
 
     @Bean
-    public AmazonElastiCacheClient elastiCacheClient() {
-        final AmazonElastiCacheClient elastiCacheClient = new AmazonElastiCacheClient(awsCredentials);
-        elastiCacheClient.setRegion(region);
+    public AmazonElastiCacheClient elastiCacheClient(AWSCredentialsProvider credentialsProvider) {
+        final AmazonElastiCacheClient elastiCacheClient = new AmazonElastiCacheClient(credentialsProvider);
+        elastiCacheClient.setRegion(defaultRegion);
         return elastiCacheClient;
     }
 }

@@ -21,21 +21,33 @@ public class MainTest {
     @Mock
     private ResourceCleaner cleaner;
 
+    @Mock
+    private UserChecker userChecker;
+
     @Test
     public void shouldCallCleanEnvironment() throws Exception {
+        when(userChecker.isOK()).thenReturn(true);
         when(cleaner.getName()).thenReturn("Test");
 
-        Main main = new Main(cleaner);
+        Main main = new Main(userChecker, cleaner);
         main.cleanEnvironment("LOCAL");
     }
 
     @Test(expected = IllegalStateException.class)
     public void shouldThrowExceptionIfNoEnvironmentSet() throws Exception {
+        when(userChecker.isOK()).thenReturn(true);
         Main.main();
     }
 
     @Test(expected = IllegalStateException.class)
     public void shouldThrowExceptionOnIllegalEnvironment() throws Exception {
+        when(userChecker.isOK()).thenReturn(true);
         Main.main("PROD");
+    }
+
+    @Test(expected = IllegalStateException.class)
+    public void shouldThrowExceptionOnBadUser() throws Exception {
+        when(userChecker.isOK()).thenReturn(false);
+        Main.main("LOCAL");
     }
 }

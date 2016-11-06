@@ -22,9 +22,11 @@ import static java.lang.String.format;
 public class Main {
     private static final Logger LOGGER = LoggerFactory.getLogger(Main.class);
     private final ResourceCleaner[] resourceCleaners;
+    private final UserChecker userChecker;
 
     @Autowired
-    public Main(ResourceCleaner... resourceCleaners) {
+    public Main(UserChecker userChecker, ResourceCleaner... resourceCleaners) {
+        this.userChecker = userChecker;
         this.resourceCleaners = resourceCleaners;
     }
 
@@ -34,7 +36,6 @@ public class Main {
         }
         LOGGER.info("Initialising");
         final String environment = args[0];
-        verifyEnvironment(environment);
 
         AbstractApplicationContext context = new AnnotationConfigApplicationContext(CleanerConfig.class);
         context.registerShutdownHook();
@@ -42,19 +43,23 @@ public class Main {
         main.cleanEnvironment(environment);
     }
 
-    private static void verifyEnvironment(String environment) {
-        if (!(ResourceCleaner.LOCAL_ENVIRONMENT.equals(environment)
-                || ResourceCleaner.DEV_ENVIRONMENT.equals(environment))) {
-            throw new IllegalStateException(format("Environment %s is not supported", environment));
-        }
-    }
-
     public void cleanEnvironment(String environment) {
+        verifyEnvironment(environment);
+        if (!userChecker.isOK()) {
+            throw new IllegalStateException("Check .aws/credentials as user is not allowed for cleaning");
+        }
         LOGGER.info("Cleaning AWS resources in {}", environment);
         for (ResourceCleaner resourceCleaner : resourceCleaners) {
             LOGGER.info("Processing {}", resourceCleaner.getName());
             resourceCleaner.clean(environment);
         }
         LOGGER.debug("Resource cleaning completed");
+    }
+
+    private void verifyEnvironment(String environment) {
+        if (!(ResourceCleaner.LOCAL_ENVIRONMENT.equals(environment)
+                || ResourceCleaner.DEV_ENVIRONMENT.equals(environment))) {
+            throw new IllegalStateException(format("Environment %s is not supported", environment));
+        }
     }
 }
