@@ -48,15 +48,22 @@ public class S3ResourceCleaner extends BaseAwsResourceCleaner {
     }
 
     private void deleteBucket(Bucket bucket) {
-        LOGGER.debug("Deleting bucket {}", bucket.getName());
+        final String bucketName = bucket.getName();
+        LOGGER.debug("Deleting bucket {}", bucketName);
         try {
-            client.deleteBucket(bucket.getName());
+            client.deleteBucket(bucketName);
         } catch (AmazonS3Exception e) {
-            if (e.getErrorCode().equals("BucketNotEmpty")) {
-                deleteAll(bucket.getName());
-                deleteBucket(bucket);
-            } else {
-                throw e;
+            switch (e.getErrorCode()) {
+                case "AccessDenied":
+                    LOGGER.warn("Can not delete bucket {}", bucketName);
+                    deleteAll(bucketName);
+                    break;
+                case "BucketNotEmpty":
+                    deleteAll(bucketName);
+                    deleteBucket(bucket);
+                    break;
+                default:
+                    throw e;
             }
         }
     }
@@ -64,10 +71,13 @@ public class S3ResourceCleaner extends BaseAwsResourceCleaner {
     private void deleteAll(String bucketName) {
         LOGGER.debug("Deleting all content in {}", bucketName);
         final ObjectListing objectListing = client.listObjects(bucketName);
-        LOGGER.debug("Creating delete objects request for {} objects", objectListing.getObjectSummaries().size());
-        DeleteObjectsRequest request = createDeleteFilesRequest(objectListing);
-        client.deleteObjects(request);
-        LOGGER.debug("Delete objects request complete");
+        final List<S3ObjectSummary> objectSummaries = objectListing.getObjectSummaries();
+        if (objectSummaries.size() > 0) {
+            LOGGER.debug("Creating delete objects request for {} objects", objectSummaries.size());
+            DeleteObjectsRequest request = createDeleteFilesRequest(objectListing);
+            client.deleteObjects(request);
+            LOGGER.debug("Delete objects request complete");
+        }
     }
 
     private DeleteObjectsRequest createDeleteFilesRequest(ObjectListing expectedFileList) {
