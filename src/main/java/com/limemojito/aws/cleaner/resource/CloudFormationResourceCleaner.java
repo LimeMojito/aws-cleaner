@@ -48,8 +48,15 @@ public class CloudFormationResourceCleaner extends BaseAwsResourceCleaner {
                   final String stackStatus = summary.getStackStatus();
                   final String stackName = summary.getStackName();
                   return (stackName.startsWith(stackPrefix) && canBeRemoved(stackStatus));
-              })
-              .forEach(stackSummary -> performWithThrottle(() -> deleteStack(stackSummary)));
+              }).forEach(this::deleteAndContinue);
+    }
+
+    private void deleteAndContinue(StackSummary stackSummary) {
+        try {
+            performWithThrottle(() -> deleteStack(stackSummary));
+        } catch (AmazonCloudFormationException e) {
+            LOGGER.warn("Could not delete stack {}. {}", stackSummary.getStackName(), e.getErrorMessage());
+        }
     }
 
     private boolean canBeRemoved(String stackStatus) {
