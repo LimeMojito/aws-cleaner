@@ -25,6 +25,7 @@ public class CloudFormationResourceCleaner extends BaseAwsResourceCleaner {
     private static final String DELETE_COMPLETE = "DELETE_COMPLETE";
     private static final long STATUS_DELAY = 5_000L;
     private final AmazonCloudFormationClient client;
+    private AmazonCloudFormationException deleteError;
 
     @Autowired
     public CloudFormationResourceCleaner(AmazonCloudFormationClient client) {
@@ -42,6 +43,7 @@ public class CloudFormationResourceCleaner extends BaseAwsResourceCleaner {
         final ListStacksResult result = client.listStacks();
         final List<StackSummary> stacks = result.getStackSummaries();
         LOGGER.debug("{} stacks found", stacks.size());
+        this.deleteError = null;
         stacks.stream()
               .filter(summary -> {
                   final String stackPrefix = ALL_ENVIRONMENTS.equals(environment) ? "" : environment;
@@ -49,6 +51,9 @@ public class CloudFormationResourceCleaner extends BaseAwsResourceCleaner {
                   final String stackName = summary.getStackName();
                   return (stackName.startsWith(stackPrefix) && canBeRemoved(stackStatus));
               }).forEach(this::deleteAndContinue);
+        if (deleteError != null) {
+            throw deleteError;
+        }
     }
 
     private void deleteAndContinue(StackSummary stackSummary) {
@@ -56,6 +61,7 @@ public class CloudFormationResourceCleaner extends BaseAwsResourceCleaner {
             performWithThrottle(() -> deleteStack(stackSummary));
         } catch (AmazonCloudFormationException e) {
             LOGGER.warn("Could not delete stack {}. {}", stackSummary.getStackName(), e.getErrorMessage());
+            deleteError = e;
         }
     }
 
