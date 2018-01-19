@@ -15,6 +15,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 
 import static java.lang.String.format;
@@ -25,11 +27,13 @@ public class CloudFormationResourceCleaner extends BaseAwsResourceCleaner {
     private static final String DELETE_COMPLETE = "DELETE_COMPLETE";
     private static final long STATUS_DELAY = 5_000L;
     private final AmazonCloudFormationClient client;
+    private final Collection<String> permStacks;
     private AmazonCloudFormationException deleteError;
 
     @Autowired
     public CloudFormationResourceCleaner(AmazonCloudFormationClient client) {
         this.client = client;
+        permStacks = Arrays.asList("teamcity", "teamcity-db", "artifactory", "devkit-ecs-cluster");
     }
 
     @Override
@@ -45,15 +49,25 @@ public class CloudFormationResourceCleaner extends BaseAwsResourceCleaner {
         LOGGER.debug("{} stacks found", stacks.size());
         this.deleteError = null;
         stacks.stream()
-              .filter(summary -> {
-                  final String stackPrefix = ALL_ENVIRONMENTS.equals(environment) ? "" : environment;
-                  final String stackStatus = summary.getStackStatus();
-                  final String stackName = summary.getStackName();
-                  return (stackName.startsWith(stackPrefix) && canBeRemoved(stackStatus));
-              }).forEach(this::deleteAndContinue);
+              .filter(summary -> isKillStack(environment, summary)).forEach(this::deleteAndContinue);
         if (deleteError != null) {
             throw deleteError;
         }
+    }
+
+    private boolean isKillStack(String environment, StackSummary summary) {
+        final String stackPrefix = ALL_ENVIRONMENTS.equals(environment) ? "" : environment;
+        final String stackStatus = summary.getStackStatus();
+        final boolean statusOkToRemove = canBeRemoved(stackStatus);
+        if (statusOkToRemove) {
+            final String stackName = summary.getStackName();
+            final boolean killStack = (!permStacks.contains(stackName)) && stackName.startsWith(stackPrefix);
+            if (!killStack) {
+                LOGGER.info("Preserving stack named " + stackName);
+            }
+            return killStack;
+        }
+        return false;
     }
 
     private void deleteAndContinue(StackSummary stackSummary) {
