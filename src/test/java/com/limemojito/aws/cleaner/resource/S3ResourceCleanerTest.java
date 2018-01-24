@@ -42,7 +42,6 @@ public class S3ResourceCleanerTest extends AwsResourceCleanerUnitTestCase {
     @Test
     public void shouldCleanLocalS3Ok() throws Exception {
         when(client.listBuckets()).thenReturn(createBucketList());
-        when(client.listObjects("test-local-bucket")).thenReturn(new ObjectListing());
 
         assertThat(cleaner.getName(), is("S3 Cleaner"));
 
@@ -57,7 +56,6 @@ public class S3ResourceCleanerTest extends AwsResourceCleanerUnitTestCase {
     public void shouldDeleteOnThrottle() throws Exception {
         when(client.listBuckets()).thenReturn(createBucketList());
         doThrow(createThrottleException()).doNothing().when(client).deleteBucket("test-local-bucket");
-        when(client.listObjects("test-local-bucket")).thenReturn(new ObjectListing());
 
         cleaner.clean("LOCAL");
 
