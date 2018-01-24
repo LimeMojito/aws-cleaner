@@ -5,7 +5,9 @@
   ~ Except as otherwise permitted by the Copyright Act 1967 (Cth) (as amended from time to time) and/or any other
   ~ applicable copyright legislation, the material may not be reproduced in any format and in any way whatsoever
   ~ without the prior written consent of the copyright owner.
-  --><project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  -->
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.limemojito.aws</groupId>
@@ -17,11 +19,11 @@
         <groupId>com.limemojito</groupId>
         <artifactId>jar-development</artifactId>
         <version>1.0.18</version>
-        <relativePath />
+        <relativePath/>
     </parent>
 
     <properties>
-        <version.aws.java.sdk>1.11.52</version.aws.java.sdk>
+        <version.aws.java.sdk>1.11.269</version.aws.java.sdk>
         <coverage.exclude.pattern.1>**BaseAwsResourceCleaner</coverage.exclude.pattern.1>
         <coverage.exclude.pattern.2>**ElasticacheResourceCleaner</coverage.exclude.pattern.2>
         <coverage.exclude.pattern.3>**CloudFormationResourceCleaner</coverage.exclude.pattern.3>

@@ -27,13 +27,13 @@ public class CloudFormationResourceCleaner extends BaseAwsResourceCleaner {
     private static final String DELETE_COMPLETE = "DELETE_COMPLETE";
     private static final long STATUS_DELAY = 5_000L;
     private final AmazonCloudFormationClient client;
-    private final Collection<String> permStacks;
+    private final Collection<String> permStackPrefixes;
     private AmazonCloudFormationException deleteError;
 
     @Autowired
     public CloudFormationResourceCleaner(AmazonCloudFormationClient client) {
         this.client = client;
-        permStacks = Arrays.asList("teamcity", "teamcity-db", "artifactory", "devkit-ecs-cluster");
+        this.permStackPrefixes = Arrays.asList("teamcity", "artifactory", "devkit-ecs-cluster", "forex-accounting");
     }
 
     @Override
@@ -61,11 +61,20 @@ public class CloudFormationResourceCleaner extends BaseAwsResourceCleaner {
         final boolean statusOkToRemove = canBeRemoved(stackStatus);
         if (statusOkToRemove) {
             final String stackName = summary.getStackName();
-            final boolean killStack = (!permStacks.contains(stackName)) && stackName.startsWith(stackPrefix);
+            final boolean killStack = (!isPermStackName(stackName)) && stackName.startsWith(stackPrefix);
             if (!killStack) {
                 LOGGER.info("Preserving stack named " + stackName);
             }
             return killStack;
+        }
+        return false;
+    }
+
+    private boolean isPermStackName(String stackName) {
+        for (String permStackPrefix : permStackPrefixes) {
+            if (stackName.startsWith(permStackPrefix)) {
+                return true;
+            }
         }
         return false;
     }
