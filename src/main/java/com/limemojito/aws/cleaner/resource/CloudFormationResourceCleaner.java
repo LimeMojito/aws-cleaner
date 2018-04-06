@@ -10,9 +10,11 @@ package com.limemojito.aws.cleaner.resource;
 
 import com.amazonaws.services.cloudformation.AmazonCloudFormationClient;
 import com.amazonaws.services.cloudformation.model.*;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.util.Arrays;
@@ -20,6 +22,8 @@ import java.util.Collection;
 import java.util.List;
 
 import static java.lang.String.format;
+import static java.util.stream.Collectors.toList;
+import static org.apache.commons.lang3.StringUtils.split;
 
 @Service
 public class CloudFormationResourceCleaner extends BaseAwsResourceCleaner {
@@ -31,9 +35,13 @@ public class CloudFormationResourceCleaner extends BaseAwsResourceCleaner {
     private AmazonCloudFormationException deleteError;
 
     @Autowired
-    public CloudFormationResourceCleaner(AmazonCloudFormationClient client) {
+    public CloudFormationResourceCleaner(AmazonCloudFormationClient client,
+                                         @Value("${cleaner.cloudformation.whitelist}") String whitelistCsv) {
         this.client = client;
-        this.permStackPrefixes = Arrays.asList("teamcity", "artifactory", "devkit-ecs-cluster", "forex-accounting");
+        this.permStackPrefixes = Arrays.stream(split(whitelistCsv, ','))
+                                       .map(StringUtils::trimToEmpty)
+                                       .collect(toList());
+        LOGGER.info("Ignoring {}", this.permStackPrefixes);
     }
 
     @Override

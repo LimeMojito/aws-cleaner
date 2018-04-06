@@ -24,10 +24,12 @@ import com.limemojito.aws.cleaner.Main;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.PropertySource;
 
 import java.io.IOException;
 
 @Configuration
+@PropertySource("classpath:/cleaner.properties")
 @ComponentScan(basePackageClasses = Main.class)
 public class CleanerConfig {
 
