@@ -57,7 +57,7 @@ public class SNSResourceCleanerTest extends AwsResourceCleanerUnitTestCase {
 
         resourceCleaner.clean();
 
-        verify(snsClient).listTopics();
+        verify(snsClient, times(2)).listTopics();
         verify(snsClient).listSubscriptionsByTopic(topicArn);
         verify(snsClient).unsubscribe(SUBSUBSCRIPTION_ARN);
     }

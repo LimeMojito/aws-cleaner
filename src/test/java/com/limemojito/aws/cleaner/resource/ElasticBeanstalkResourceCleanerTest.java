@@ -44,8 +44,6 @@ public class ElasticBeanstalkResourceCleanerTest extends AwsResourceCleanerUnitT
     public void shouldCleanLocalOnly() throws Exception {
         when(client.describeEnvironments()).thenReturn(createExampleEnvironments());
 
-        assertThat(cleaner.getName(), is("Elastic Beanstalk Cleaner"));
-
         cleaner.clean();
 
         verify(client).describeEnvironments();

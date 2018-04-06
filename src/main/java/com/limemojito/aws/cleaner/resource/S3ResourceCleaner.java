@@ -20,7 +20,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
-public class S3ResourceCleaner extends BaseAwsResourceCleaner {
+public class S3ResourceCleaner extends PhysicalResourceCleaner {
     private static final Logger LOGGER = LoggerFactory.getLogger(S3ResourceCleaner.class);
     private final AmazonS3 client;
 
@@ -30,32 +30,31 @@ public class S3ResourceCleaner extends BaseAwsResourceCleaner {
     }
 
     @Override
-    public String getName() {
-        return "S3 Cleaner";
+    protected List<String> getPhysicalResourceIds() {
+        return client.listBuckets()
+                     .stream()
+                     .map(Bucket::getName)
+                     .collect(Collectors.toList());
     }
 
     @Override
-    public void clean() {
-        LOGGER.debug("Listing s3 buckets");
-        final List<Bucket> buckets = client.listBuckets();
-        LOGGER.debug("Found {} buckets", buckets.size());
-        buckets.forEach(bucket -> performWithThrottle(() -> deleteBucket(bucket)));
+    protected void performDelete(String physicalId) {
+        deleteBucket(physicalId);
     }
 
-    private void deleteBucket(Bucket bucket) {
-        final String bucketName = bucket.getName();
+    private void deleteBucket(String bucketName) {
         LOGGER.debug("Deleting bucket {}", bucketName);
         try {
             client.deleteBucket(bucketName);
         } catch (AmazonS3Exception e) {
             switch (e.getErrorCode()) {
                 case "AccessDenied":
-                    LOGGER.warn("Can not delete bucket {}", bucketName);
+                    LOGGER.warn("Can not delete bucket {} as access denied", bucketName);
                     deleteAll(bucketName);
                     break;
                 case "BucketNotEmpty":
                     deleteAll(bucketName);
-                    deleteBucket(bucket);
+                    deleteBucket(bucketName);
                     break;
                 default:
                     throw e;
@@ -78,7 +77,7 @@ public class S3ResourceCleaner extends BaseAwsResourceCleaner {
     private DeleteObjectsRequest createDeleteFilesRequest(ObjectListing expectedFileList) {
         final DeleteObjectsRequest deleteObjectsRequest = new DeleteObjectsRequest(expectedFileList.getBucketName());
         final List<S3ObjectSummary> objectSummaries = expectedFileList.getObjectSummaries();
-        List<DeleteObjectsRequest.KeyVersion> keys = new ArrayList<>(objectSummaries.size());
+        final List<DeleteObjectsRequest.KeyVersion> keys = new ArrayList<>(objectSummaries.size());
         keys.addAll(objectSummaries.stream()
                                    .map(objectSummary -> new DeleteObjectsRequest.KeyVersion(objectSummary.getKey()))
                                    .collect(Collectors.toList()));

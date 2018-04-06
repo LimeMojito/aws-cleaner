@@ -27,7 +27,6 @@ public class MainTest {
     @Test
     public void shouldCallCleanEnvironment() throws Exception {
         when(userChecker.isOK()).thenReturn(true);
-        when(cleaner.getName()).thenReturn("Test");
 
         Main main = new Main(userChecker, cleaner);
         main.cleanEnvironment();

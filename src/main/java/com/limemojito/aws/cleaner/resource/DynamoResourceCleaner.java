@@ -9,7 +9,6 @@
 package com.limemojito.aws.cleaner.resource;
 
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
-import com.amazonaws.services.dynamodbv2.model.ListTablesResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,7 +17,7 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 
 @Service
-public class DynamoResourceCleaner extends BaseAwsResourceCleaner {
+public class DynamoResourceCleaner extends PhysicalResourceCleaner {
     private static final Logger LOGGER = LoggerFactory.getLogger(DynamoResourceCleaner.class);
     private final AmazonDynamoDB dbClient;
 
@@ -28,20 +27,14 @@ public class DynamoResourceCleaner extends BaseAwsResourceCleaner {
     }
 
     @Override
-    public String getName() {
-        return "DynamoDB Cleaner";
+    protected List<String> getPhysicalResourceIds() {
+        LOGGER.debug("Scanning tables");
+        return dbClient.listTables().getTableNames();
     }
 
     @Override
-    public void clean() {
-        LOGGER.debug("Scanning tables");
-        final ListTablesResult listTablesResult = dbClient.listTables();
-        final List<String> tableNames = listTablesResult.getTableNames();
-        LOGGER.debug("Scanning {} tables", tableNames.size());
-        tableNames.stream().forEach((tableName) -> performWithThrottle(() -> {
-            LOGGER.debug("Deleting table {}", tableName);
-            dbClient.deleteTable(tableName);
-        }));
+    protected void performDelete(String physicalId) {
+        LOGGER.debug("Deleting resource {}", physicalId);
+        dbClient.deleteTable(physicalId);
     }
-
 }

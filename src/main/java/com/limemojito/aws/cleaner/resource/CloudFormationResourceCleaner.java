@@ -45,11 +45,6 @@ public class CloudFormationResourceCleaner extends BaseAwsResourceCleaner {
     }
 
     @Override
-    public String getName() {
-        return "Cloud Formation Cleaner";
-    }
-
-    @Override
     public void clean() {
         LOGGER.debug("Requesting stacks");
         final ListStacksResult result = client.listStacks();

@@ -9,7 +9,5 @@
 package com.limemojito.aws.cleaner;
 
 public interface ResourceCleaner {
-    String getName();
-
     void clean();
 }

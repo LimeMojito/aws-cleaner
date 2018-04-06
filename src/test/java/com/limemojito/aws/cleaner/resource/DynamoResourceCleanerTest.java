@@ -38,8 +38,6 @@ public class DynamoResourceCleanerTest extends AwsResourceCleanerUnitTestCase {
     public void shouldCleanViaClient() throws Exception {
         when(client.listTables()).thenReturn(expectedListTables());
 
-        assertThat(cleaner.getName(), is("DynamoDB Cleaner"));
-
         cleaner.clean();
 
         verify(client).listTables();

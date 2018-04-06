@@ -19,8 +19,10 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 
+import static java.util.stream.Collectors.toList;
+
 @Service
-public class ElasticacheResourceCleaner extends BaseAwsResourceCleaner {
+public class ElasticacheResourceCleaner extends PhysicalResourceCleaner {
     private static final Logger LOGGER = LoggerFactory.getLogger(ElasticacheResourceCleaner.class);
     private final AmazonElastiCache client;
 
@@ -30,23 +32,19 @@ public class ElasticacheResourceCleaner extends BaseAwsResourceCleaner {
     }
 
     @Override
-    public String getName() {
-        return "Elasticache Cleaner";
-    }
-
-    @Override
-    public void clean() {
+    protected List<String> getPhysicalResourceIds() {
         LOGGER.info("Cleaning elasticache");
         DescribeCacheClustersResult results = client.describeCacheClusters();
         final List<CacheCluster> cacheClusters = results.getCacheClusters();
         LOGGER.debug("Found {} clusters", cacheClusters.size());
-        cacheClusters.stream()
-                     .filter(cacheCluster -> ("available".equals(cacheCluster.getCacheClusterStatus())))
-                     .forEach(cacheCluster1 -> performWithThrottle(() -> {
-                         final String cacheClusterId = cacheCluster1.getCacheClusterId();
-                         LOGGER.info("Removing {} cache cluster", cacheClusterId);
-                         client.deleteCacheCluster(new DeleteCacheClusterRequest(cacheClusterId));
-                     }));
+        return cacheClusters.stream()
+                            .filter(cacheCluster -> ("available".equals(cacheCluster.getCacheClusterStatus())))
+                            .map(CacheCluster::getCacheClusterId)
+                            .collect(toList());
+    }
 
+    @Override
+    protected void performDelete(String physicalId) {
+        client.deleteCacheCluster(new DeleteCacheClusterRequest(physicalId));
     }
 }

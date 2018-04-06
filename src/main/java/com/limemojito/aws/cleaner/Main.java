@@ -43,7 +43,7 @@ public class Main {
         }
         LOGGER.info("Cleaning AWS resources");
         for (ResourceCleaner resourceCleaner : resourceCleaners) {
-            LOGGER.info("Processing {}", resourceCleaner.getName());
+            LOGGER.info("Processing {}", resourceCleaner.getClass().getSimpleName());
             resourceCleaner.clean();
         }
         LOGGER.debug("Resource cleaning completed");

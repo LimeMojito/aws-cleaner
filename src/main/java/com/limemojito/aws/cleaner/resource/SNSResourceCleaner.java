@@ -15,60 +15,87 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
 @Service
-public class SNSResourceCleaner extends BaseAwsResourceCleaner {
+public class SNSResourceCleaner extends CompositeResourceCleaner {
     private static final Logger LOGGER = LoggerFactory.getLogger(SNSResourceCleaner.class);
-    private final AmazonSNS client;
 
     @Autowired
     public SNSResourceCleaner(AmazonSNS client) {
-        this.client = client;
+        super(new SnsSubscriptionCleaner(client), new SnsPlatformCleaner(client), new SnsTopicCleaner(client));
     }
 
-    @Override
-    public String getName() {
-        return "SNS Cleaner";
-    }
+    private static class SnsTopicCleaner extends PhysicalResourceCleaner {
+        private final AmazonSNS client;
 
-    @Override
-    public void clean() {
-        LOGGER.debug("Listing topics");
-        for (Topic topic : client.listTopics().getTopics()) {
-            final String topicArn = topic.getTopicArn();
-            unsubscribeAll(topicArn);
+        SnsTopicCleaner(AmazonSNS client) {
+            this.client = client;
         }
-        LOGGER.debug("Listing platforms");
-        final ListPlatformApplicationsResult listPlatformApplicationsResult = client.listPlatformApplications();
-        if (listPlatformApplicationsResult != null) {
-            for (PlatformApplication platform : listPlatformApplicationsResult.getPlatformApplications()) {
-                final String applicationArn = platform.getPlatformApplicationArn();
-                removeApplicationEndpoints(applicationArn);
+
+        @Override
+        protected List<String> getPhysicalResourceIds() {
+            return client.listTopics().getTopics().stream().map(Topic::getTopicArn).collect(Collectors.toList());
+        }
+
+        @Override
+        protected void performDelete(String physicalId) {
+            client.deleteTopic(physicalId);
+        }
+    }
+
+    private static class SnsSubscriptionCleaner extends PhysicalResourceCleaner {
+        private final AmazonSNS client;
+
+        SnsSubscriptionCleaner(AmazonSNS client) {
+            this.client = client;
+        }
+
+        @Override
+        protected List<String> getPhysicalResourceIds() {
+            return client.listTopics().getTopics().stream().map(Topic::getTopicArn).collect(Collectors.toList());
+        }
+
+        @Override
+        protected void performDelete(String physicalId) {
+            LOGGER.debug("Listing subscriptions for {}", physicalId);
+            for (Subscription subscription : client.listSubscriptionsByTopic(physicalId).getSubscriptions()) {
+                String subscriptionArn = subscription.getSubscriptionArn();
+                LOGGER.debug("Unsubscribe {}", subscriptionArn);
+                performWithThrottle(() -> client.unsubscribe(subscriptionArn));
             }
         }
     }
 
-    private void removeApplicationEndpoints(String applicationArn) {
-        LOGGER.debug("Removing endpoints from {}", applicationArn);
-        final ListEndpointsByPlatformApplicationRequest applicationRequest = new ListEndpointsByPlatformApplicationRequest()
-                .withPlatformApplicationArn(applicationArn);
-        ListEndpointsByPlatformApplicationResult endpoints = client.listEndpointsByPlatformApplication(applicationRequest);
-        for (Endpoint endpoint : endpoints.getEndpoints()) {
-            String endpointArn = endpoint.getEndpointArn();
-            removeEndpoint(endpointArn);
+    private static class SnsPlatformCleaner extends PhysicalResourceCleaner {
+        private final AmazonSNS client;
+
+        SnsPlatformCleaner(AmazonSNS client) {
+            this.client = client;
+        }
+
+        @Override
+        protected List<String> getPhysicalResourceIds() {
+            return client.listPlatformApplications()
+                         .getPlatformApplications()
+                         .stream()
+                         .map(PlatformApplication::getPlatformApplicationArn)
+                         .collect(Collectors.toList());
+        }
+
+        @Override
+        protected void performDelete(String physicalId) {
+            LOGGER.debug("Removing endpoints from {}", physicalId);
+            final ListEndpointsByPlatformApplicationRequest applicationRequest = new ListEndpointsByPlatformApplicationRequest()
+                    .withPlatformApplicationArn(physicalId);
+            ListEndpointsByPlatformApplicationResult endpoints = client.listEndpointsByPlatformApplication(applicationRequest);
+            for (Endpoint endpoint : endpoints.getEndpoints()) {
+                String endpointArn = endpoint.getEndpointArn();
+                LOGGER.debug("Removing {}", endpointArn);
+                performWithThrottle(() -> client.deleteEndpoint(new DeleteEndpointRequest().withEndpointArn(endpointArn)));
+            }
         }
     }
 
-    private void removeEndpoint(String endpointArn) {
-        LOGGER.debug("Removing {}", endpointArn);
-        performWithThrottle(() -> client.deleteEndpoint(new DeleteEndpointRequest().withEndpointArn(endpointArn)));
-    }
-
-    private void unsubscribeAll(String topicArn) {
-        LOGGER.debug("Listing subscriptions for {}", topicArn);
-        for (Subscription subscription : client.listSubscriptionsByTopic(topicArn).getSubscriptions()) {
-            String subscriptionArn = subscription.getSubscriptionArn();
-            LOGGER.debug("Unsubscribing {}", subscriptionArn);
-            performWithThrottle(() -> client.unsubscribe(subscriptionArn));
-        }
-    }
 }

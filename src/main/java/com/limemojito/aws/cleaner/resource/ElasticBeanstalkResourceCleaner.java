@@ -18,9 +18,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
-public class ElasticBeanstalkResourceCleaner extends BaseAwsResourceCleaner {
+public class ElasticBeanstalkResourceCleaner extends PhysicalResourceCleaner {
     private static final Logger LOGGER = LoggerFactory.getLogger(ElasticBeanstalkResourceCleaner.class);
     private final AWSElasticBeanstalk client;
 
@@ -30,27 +31,19 @@ public class ElasticBeanstalkResourceCleaner extends BaseAwsResourceCleaner {
     }
 
     @Override
-    public String getName() {
-        return "Elastic Beanstalk Cleaner";
-    }
-
-    @Override
-    public void clean() {
-        LOGGER.debug("Requesting environments");
+    protected List<String> getPhysicalResourceIds() {
         final DescribeEnvironmentsResult result = client.describeEnvironments();
         final List<EnvironmentDescription> environments = result.getEnvironments();
         LOGGER.debug("{} environments found", environments.size());
-        environments
-                .stream()
-                .filter(environmentDescription -> environmentDescription.getStatus().equalsIgnoreCase("Ready"))
-                .forEach(environmentDescription -> performWithThrottle(() -> terminateEnvironment(environmentDescription)));
+        return environments.stream()
+                           .filter(environmentDescription -> environmentDescription.getStatus().equalsIgnoreCase("Ready"))
+                           .map(EnvironmentDescription::getEnvironmentName)
+                           .collect(Collectors.toList());
     }
 
-    private void terminateEnvironment(EnvironmentDescription environmentDescription) {
-        final String environmentName = environmentDescription.getEnvironmentName();
-        final TerminateEnvironmentRequest terminateEnvironmentRequest = new TerminateEnvironmentRequest()
-                .withEnvironmentName(environmentName);
-        LOGGER.info("Terminating environment {}", environmentName);
-        client.terminateEnvironment(terminateEnvironmentRequest);
+    @Override
+    protected void performDelete(String physicalId) {
+        LOGGER.info("Terminating environment {}", physicalId);
+        client.terminateEnvironment(new TerminateEnvironmentRequest().withEnvironmentName(physicalId));
     }
 }

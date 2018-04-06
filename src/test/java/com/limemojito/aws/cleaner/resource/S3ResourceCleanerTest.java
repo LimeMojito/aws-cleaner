@@ -43,8 +43,6 @@ public class S3ResourceCleanerTest extends AwsResourceCleanerUnitTestCase {
     public void shouldCleanLocalS3Ok() throws Exception {
         when(client.listBuckets()).thenReturn(createBucketList());
 
-        assertThat(cleaner.getName(), is("S3 Cleaner"));
-
         cleaner.clean();
 
         verify(client, times(1)).deleteBucket("test-local-bucket");
