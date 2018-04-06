@@ -27,6 +27,7 @@ public class ElasticBeanstalkResourceCleaner extends PhysicalResourceCleaner {
 
     @Autowired
     public ElasticBeanstalkResourceCleaner(AWSElasticBeanstalk client) {
+        super();
         this.client = client;
     }
 

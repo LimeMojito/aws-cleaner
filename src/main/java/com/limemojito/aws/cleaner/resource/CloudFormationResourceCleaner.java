@@ -10,6 +10,7 @@ package com.limemojito.aws.cleaner.resource;
 
 import com.amazonaws.services.cloudformation.AmazonCloudFormation;
 import com.amazonaws.services.cloudformation.model.*;
+import com.limemojito.aws.cleaner.ResourceCleaner;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,12 +22,13 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 
+import static com.amazonaws.services.cloudformation.model.StackStatus.*;
 import static java.lang.String.format;
 import static java.util.stream.Collectors.toList;
 import static org.apache.commons.lang3.StringUtils.split;
 
 @Service
-public class CloudFormationResourceCleaner extends BaseAwsResourceCleaner {
+public class CloudFormationResourceCleaner implements ResourceCleaner {
     private static final Logger LOGGER = LoggerFactory.getLogger(CloudFormationResourceCleaner.class);
     private static final String DELETE_COMPLETE = "DELETE_COMPLETE";
     private static final long STATUS_DELAY = 5_000L;
@@ -47,8 +49,20 @@ public class CloudFormationResourceCleaner extends BaseAwsResourceCleaner {
     @Override
     public void clean() {
         LOGGER.debug("Requesting stacks");
-        final ListStacksResult result = client.listStacks();
-        final List<StackSummary> stacks = result.getStackSummaries();
+        final ListStacksRequest request = new ListStacksRequest().withStackStatusFilters(CREATE_COMPLETE,
+                                                                                         CREATE_FAILED,
+                                                                                         CREATE_IN_PROGRESS,
+                                                                                         ROLLBACK_COMPLETE,
+                                                                                         ROLLBACK_FAILED,
+                                                                                         UPDATE_COMPLETE,
+                                                                                         UPDATE_COMPLETE_CLEANUP_IN_PROGRESS,
+                                                                                         UPDATE_IN_PROGRESS,
+                                                                                         UPDATE_ROLLBACK_COMPLETE,
+                                                                                         UPDATE_ROLLBACK_COMPLETE_CLEANUP_IN_PROGRESS,
+                                                                                         UPDATE_ROLLBACK_FAILED,
+                                                                                         UPDATE_ROLLBACK_IN_PROGRESS,
+                                                                                         DELETE_FAILED);
+        final List<StackSummary> stacks = client.listStacks(request).getStackSummaries();
         LOGGER.debug("{} stacks found", stacks.size());
         this.deleteError = null;
         stacks.stream()
@@ -84,7 +98,7 @@ public class CloudFormationResourceCleaner extends BaseAwsResourceCleaner {
 
     private void deleteAndContinue(StackSummary stackSummary) {
         try {
-            performWithThrottle(() -> deleteStack(stackSummary));
+            Throttle.performWithThrottle(() -> deleteStack(stackSummary));
         } catch (AmazonCloudFormationException e) {
             LOGGER.warn("Could not delete stack {}. {}", stackSummary.getStackName(), e.getErrorMessage());
             deleteError = e;

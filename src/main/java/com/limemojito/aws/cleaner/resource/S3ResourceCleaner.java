@@ -26,6 +26,7 @@ public class S3ResourceCleaner extends PhysicalResourceCleaner {
 
     @Autowired
     public S3ResourceCleaner(AmazonS3 client) {
+        super();
         this.client = client;
     }
 

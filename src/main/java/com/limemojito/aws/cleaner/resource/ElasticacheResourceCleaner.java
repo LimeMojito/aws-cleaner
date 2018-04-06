@@ -28,6 +28,7 @@ public class ElasticacheResourceCleaner extends PhysicalResourceCleaner {
 
     @Autowired
     public ElasticacheResourceCleaner(AmazonElastiCache client) {
+        super();
         this.client = client;
     }
 

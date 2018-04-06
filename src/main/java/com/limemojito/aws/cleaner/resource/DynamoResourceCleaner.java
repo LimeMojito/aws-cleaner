@@ -23,6 +23,7 @@ public class DynamoResourceCleaner extends PhysicalResourceCleaner {
 
     @Autowired
     public DynamoResourceCleaner(AmazonDynamoDB dbClient) {
+        super();
         this.dbClient = dbClient;
     }
 

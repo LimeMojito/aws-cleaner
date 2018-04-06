@@ -31,6 +31,7 @@ public class SNSResourceCleaner extends CompositeResourceCleaner {
         private final AmazonSNS client;
 
         SnsTopicCleaner(AmazonSNS client) {
+            super();
             this.client = client;
         }
 
@@ -49,6 +50,7 @@ public class SNSResourceCleaner extends CompositeResourceCleaner {
         private final AmazonSNS client;
 
         SnsSubscriptionCleaner(AmazonSNS client) {
+            super();
             this.client = client;
         }
 
@@ -63,7 +65,7 @@ public class SNSResourceCleaner extends CompositeResourceCleaner {
             for (Subscription subscription : client.listSubscriptionsByTopic(physicalId).getSubscriptions()) {
                 String subscriptionArn = subscription.getSubscriptionArn();
                 LOGGER.debug("Unsubscribe {}", subscriptionArn);
-                performWithThrottle(() -> client.unsubscribe(subscriptionArn));
+                Throttle.performWithThrottle(() -> client.unsubscribe(subscriptionArn));
             }
         }
     }
@@ -72,6 +74,7 @@ public class SNSResourceCleaner extends CompositeResourceCleaner {
         private final AmazonSNS client;
 
         SnsPlatformCleaner(AmazonSNS client) {
+            super();
             this.client = client;
         }
 
@@ -93,7 +96,7 @@ public class SNSResourceCleaner extends CompositeResourceCleaner {
             for (Endpoint endpoint : endpoints.getEndpoints()) {
                 String endpointArn = endpoint.getEndpointArn();
                 LOGGER.debug("Removing {}", endpointArn);
-                performWithThrottle(() -> client.deleteEndpoint(new DeleteEndpointRequest().withEndpointArn(endpointArn)));
+                Throttle.performWithThrottle(() -> client.deleteEndpoint(new DeleteEndpointRequest().withEndpointArn(endpointArn)));
             }
         }
     }
