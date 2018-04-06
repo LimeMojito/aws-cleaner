@@ -15,15 +15,12 @@ import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
-import static com.limemojito.aws.cleaner.ResourceCleaner.DEV_ENVIRONMENT;
-import static com.limemojito.aws.cleaner.ResourceCleaner.LOCAL_ENVIRONMENT;
 import static org.mockito.Mockito.*;
 
 @RunWith(MockitoJUnitRunner.class)
 public class SNSResourceCleanerTest extends AwsResourceCleanerUnitTestCase {
 
-    private static final String LOCAL_TOPIC = "some:arn:-LOCAL-";
-    private static final String DEV_TOPIC = "some:arn:-DEV-";
+    private static final String TOPIC = "some:arn:-DEV-";
     private static final String SUBSUBSCRIPTION_ARN = "sub";
     private static final String ENDPOINT_ARN = "endpointArn";
     @Mock
@@ -33,7 +30,7 @@ public class SNSResourceCleanerTest extends AwsResourceCleanerUnitTestCase {
     public void shouldCleanDevOk() throws Exception {
         when(snsClient.listPlatformApplications()).thenReturn(platforms());
         when(snsClient.listEndpointsByPlatformApplication(any(ListEndpointsByPlatformApplicationRequest.class))).thenReturn(endpoints());
-        performTopicSubscriptionDelete(DEV_ENVIRONMENT, DEV_TOPIC);
+        performTopicSubscriptionDelete(TOPIC);
 
         verify(snsClient, times(1)).listPlatformApplications();
         verify(snsClient, times(1)).listEndpointsByPlatformApplication(any(ListEndpointsByPlatformApplicationRequest.class));
@@ -52,13 +49,13 @@ public class SNSResourceCleanerTest extends AwsResourceCleanerUnitTestCase {
         return new PlatformApplication().withPlatformApplicationArn("something_DEVELOPMENT");
     }
 
-    private void performTopicSubscriptionDelete(String environment, String topicArn) {
+    private void performTopicSubscriptionDelete(String topicArn) {
         when(snsClient.listTopics()).thenReturn(topicList());
         when(snsClient.listSubscriptionsByTopic(topicArn)).thenReturn(subscriptions(topicArn));
 
         SNSResourceCleaner resourceCleaner = new SNSResourceCleaner(snsClient);
 
-        resourceCleaner.clean(environment);
+        resourceCleaner.clean();
 
         verify(snsClient).listTopics();
         verify(snsClient).listSubscriptionsByTopic(topicArn);
@@ -74,7 +71,7 @@ public class SNSResourceCleanerTest extends AwsResourceCleanerUnitTestCase {
     }
 
     private ListTopicsResult topicList() {
-        return new ListTopicsResult().withTopics(createTopic(DEV_TOPIC), createTopic(LOCAL_TOPIC));
+        return new ListTopicsResult().withTopics(createTopic(TOPIC));
     }
 
     private Topic createTopic(String arn) {

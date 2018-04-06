@@ -30,26 +30,6 @@ public class MainTest {
         when(cleaner.getName()).thenReturn("Test");
 
         Main main = new Main(userChecker, cleaner);
-        main.cleanEnvironment("LOCAL");
-    }
-
-    @Test(expected = IllegalStateException.class)
-    public void shouldThrowExceptionIfNoEnvironmentSet() throws Exception {
-        // not using mocks!
-        Main.main();
-    }
-
-    @Test(expected = IllegalStateException.class)
-    public void shouldThrowExceptionOnIllegalEnvironment() throws Exception {
-        // not using mocks!
-        Main.main("PROD");
-    }
-
-    @Test(expected = IllegalStateException.class)
-    public void shouldThrowExceptionOnBadUser() throws Exception {
-        when(userChecker.isOK()).thenReturn(false);
-
-        Main main = new Main(userChecker, cleaner);
-        main.cleanEnvironment("LOCAL");
+        main.cleanEnvironment();
     }
 }

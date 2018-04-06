@@ -11,7 +11,6 @@ package com.limemojito.aws.cleaner.resource;
 import com.amazonaws.services.elasticbeanstalk.AWSElasticBeanstalkClient;
 import com.amazonaws.services.elasticbeanstalk.model.DescribeEnvironmentsResult;
 import com.amazonaws.services.elasticbeanstalk.model.EnvironmentDescription;
-import com.amazonaws.services.elasticbeanstalk.model.EnvironmentStatus;
 import com.amazonaws.services.elasticbeanstalk.model.TerminateEnvironmentRequest;
 import com.limemojito.aws.cleaner.ResourceCleaner;
 import org.junit.Before;
@@ -47,7 +46,7 @@ public class ElasticBeanstalkResourceCleanerTest extends AwsResourceCleanerUnitT
 
         assertThat(cleaner.getName(), is("Elastic Beanstalk Cleaner"));
 
-        cleaner.clean("LOCAL");
+        cleaner.clean();
 
         verify(client).describeEnvironments();
         verify(client, times(1)).terminateEnvironment(createTerminateRequest("LOCAL"));
@@ -59,12 +58,12 @@ public class ElasticBeanstalkResourceCleanerTest extends AwsResourceCleanerUnitT
         when(client.describeEnvironments()).thenReturn(createExampleEnvironments());
         when(client.terminateEnvironment(expectedRequest)).thenThrow(createThrottleException()).thenReturn(null);
 
-        cleaner.clean("LOCAL");
+        cleaner.clean();
 
         verify(client).describeEnvironments();
         verify(client, times(2)).terminateEnvironment(expectedRequest);
-        verify(client, times(0)).terminateEnvironment(createTerminateRequest("DEV"));
-        verify(client, times(0)).terminateEnvironment(createTerminateRequest("PROD"));
+        verify(client).terminateEnvironment(createTerminateRequest("DEV"));
+        verify(client).terminateEnvironment(createTerminateRequest("PROD"));
     }
 
     private TerminateEnvironmentRequest createTerminateRequest(String environmentName) {

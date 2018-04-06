@@ -8,7 +8,7 @@
 
 package com.limemojito.aws.cleaner.resource;
 
-import com.amazonaws.services.elasticbeanstalk.AWSElasticBeanstalkClient;
+import com.amazonaws.services.elasticbeanstalk.AWSElasticBeanstalk;
 import com.amazonaws.services.elasticbeanstalk.model.DescribeEnvironmentsResult;
 import com.amazonaws.services.elasticbeanstalk.model.EnvironmentDescription;
 import com.amazonaws.services.elasticbeanstalk.model.TerminateEnvironmentRequest;
@@ -22,10 +22,10 @@ import java.util.List;
 @Service
 public class ElasticBeanstalkResourceCleaner extends BaseAwsResourceCleaner {
     private static final Logger LOGGER = LoggerFactory.getLogger(ElasticBeanstalkResourceCleaner.class);
-    private final AWSElasticBeanstalkClient client;
+    private final AWSElasticBeanstalk client;
 
     @Autowired
-    public ElasticBeanstalkResourceCleaner(AWSElasticBeanstalkClient client) {
+    public ElasticBeanstalkResourceCleaner(AWSElasticBeanstalk client) {
         this.client = client;
     }
 
@@ -35,19 +35,14 @@ public class ElasticBeanstalkResourceCleaner extends BaseAwsResourceCleaner {
     }
 
     @Override
-    public void clean(String environment) {
+    public void clean() {
         LOGGER.debug("Requesting environments");
         final DescribeEnvironmentsResult result = client.describeEnvironments();
         final List<EnvironmentDescription> environments = result.getEnvironments();
         LOGGER.debug("{} environments found", environments.size());
         environments
                 .stream()
-                .filter(environmentDescription -> {
-                    final String envPrefix = ALL_ENVIRONMENTS.equals(environment) ? "" : environment;
-                    return (environmentDescription.getEnvironmentName()
-                                                  .startsWith(envPrefix) && environmentDescription.getStatus()
-                                                                                                     .equalsIgnoreCase("Ready"));
-                })
+                .filter(environmentDescription -> environmentDescription.getStatus().equalsIgnoreCase("Ready"))
                 .forEach(environmentDescription -> performWithThrottle(() -> terminateEnvironment(environmentDescription)));
     }
 

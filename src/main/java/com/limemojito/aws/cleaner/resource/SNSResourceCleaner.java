@@ -8,22 +8,20 @@
 
 package com.limemojito.aws.cleaner.resource;
 
-import com.amazonaws.services.sns.AmazonSNSClient;
+import com.amazonaws.services.sns.AmazonSNS;
 import com.amazonaws.services.sns.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import static org.apache.commons.lang3.StringUtils.containsIgnoreCase;
-
 @Service
 public class SNSResourceCleaner extends BaseAwsResourceCleaner {
     private static final Logger LOGGER = LoggerFactory.getLogger(SNSResourceCleaner.class);
-    private final AmazonSNSClient client;
+    private final AmazonSNS client;
 
     @Autowired
-    public SNSResourceCleaner(AmazonSNSClient client) {
+    public SNSResourceCleaner(AmazonSNS client) {
         this.client = client;
     }
 
@@ -33,24 +31,18 @@ public class SNSResourceCleaner extends BaseAwsResourceCleaner {
     }
 
     @Override
-    public void clean(String environment) {
+    public void clean() {
         LOGGER.debug("Listing topics");
         for (Topic topic : client.listTopics().getTopics()) {
             final String topicArn = topic.getTopicArn();
-            final String topicMarker = ALL_ENVIRONMENTS.equals(environment) ? "" : "-" + environment.toLowerCase() + "-";
-            if (containsIgnoreCase(topicArn, topicMarker)) {
-                unsubscribeAll(topicArn);
-            }
+            unsubscribeAll(topicArn);
         }
-            LOGGER.debug("Listing platforms");
+        LOGGER.debug("Listing platforms");
         final ListPlatformApplicationsResult listPlatformApplicationsResult = client.listPlatformApplications();
         if (listPlatformApplicationsResult != null) {
             for (PlatformApplication platform : listPlatformApplicationsResult.getPlatformApplications()) {
                 final String applicationArn = platform.getPlatformApplicationArn();
-                final String environmentMarker = ALL_ENVIRONMENTS.equals(environment) ? "" : "_" + DEV_ENVIRONMENT;
-                if (containsIgnoreCase(applicationArn, environmentMarker)) {
-                    removeApplicationEndpoints(applicationArn);
-                }
+                removeApplicationEndpoints(applicationArn);
             }
         }
     }

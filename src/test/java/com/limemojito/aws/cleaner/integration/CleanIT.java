@@ -11,10 +11,10 @@ package com.limemojito.aws.cleaner.integration;
 import com.limemojito.aws.cleaner.Main;
 import org.junit.Test;
 
-public class LocalCleanTest {
+public class CleanIT {
 
     @Test
-    public void shouldCleanLocalOk() throws Exception {
-        Main.main("LOCAL");
+    public void shouldCleanOk() throws Exception {
+        Main.main();
     }
 }

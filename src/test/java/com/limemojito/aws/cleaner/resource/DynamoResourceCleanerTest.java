@@ -40,12 +40,12 @@ public class DynamoResourceCleanerTest extends AwsResourceCleanerUnitTestCase {
 
         assertThat(cleaner.getName(), is("DynamoDB Cleaner"));
 
-        cleaner.clean("LOCAL");
+        cleaner.clean();
 
         verify(client).listTables();
         verify(client).deleteTable("LOCAL-TABLE");
-        verify(client, times(0)).deleteTable("DEV-TABLE");
-        verify(client, times(0)).deleteTable("PROD-TABLE");
+        verify(client).deleteTable("DEV-TABLE");
+        verify(client).deleteTable("PROD-TABLE");
     }
 
     @Test
@@ -53,12 +53,12 @@ public class DynamoResourceCleanerTest extends AwsResourceCleanerUnitTestCase {
         when(client.listTables()).thenReturn(expectedListTables());
         when(client.deleteTable("LOCAL-TABLE")).thenThrow(createThrottleException()).thenReturn(null);
 
-        cleaner.clean("LOCAL");
+        cleaner.clean();
 
         verify(client).listTables();
         verify(client, times(2)).deleteTable("LOCAL-TABLE");
-        verify(client, times(0)).deleteTable("DEV-TABLE");
-        verify(client, times(0)).deleteTable("PROD-TABLE");
+        verify(client).deleteTable("DEV-TABLE");
+        verify(client).deleteTable("PROD-TABLE");
     }
 
     private ListTablesResult expectedListTables() {

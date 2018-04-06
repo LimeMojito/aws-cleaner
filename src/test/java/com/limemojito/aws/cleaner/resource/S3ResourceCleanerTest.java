@@ -45,11 +45,11 @@ public class S3ResourceCleanerTest extends AwsResourceCleanerUnitTestCase {
 
         assertThat(cleaner.getName(), is("S3 Cleaner"));
 
-        cleaner.clean("LOCAL");
+        cleaner.clean();
 
         verify(client, times(1)).deleteBucket("test-local-bucket");
-        verify(client, times(0)).deleteBucket("test-dev-bucket");
-        verify(client, times(0)).deleteBucket("test-prod-bucket");
+        verify(client).deleteBucket("test-dev-bucket");
+        verify(client).deleteBucket("test-prod-bucket");
     }
 
     @Test
@@ -57,11 +57,11 @@ public class S3ResourceCleanerTest extends AwsResourceCleanerUnitTestCase {
         when(client.listBuckets()).thenReturn(createBucketList());
         doThrow(createThrottleException()).doNothing().when(client).deleteBucket("test-local-bucket");
 
-        cleaner.clean("LOCAL");
+        cleaner.clean();
 
         verify(client, times(2)).deleteBucket("test-local-bucket");
-        verify(client, times(0)).deleteBucket("test-dev-bucket");
-        verify(client, times(0)).deleteBucket("test-prod-bucket");
+        verify(client).deleteBucket("test-dev-bucket");
+        verify(client).deleteBucket("test-prod-bucket");
     }
 
     @Test
@@ -71,12 +71,12 @@ public class S3ResourceCleanerTest extends AwsResourceCleanerUnitTestCase {
         when(client.listObjects("test-local-bucket")).thenReturn(expectedFileList);
         doThrow(createsS3NotEmptyException()).doNothing().when(client).deleteBucket("test-local-bucket");
 
-        cleaner.clean("LOCAL");
+        cleaner.clean();
 
         verify(client).deleteObjects(any(DeleteObjectsRequest.class));
         verify(client, times(2)).deleteBucket("test-local-bucket");
-        verify(client, times(0)).deleteBucket("test-dev-bucket");
-        verify(client, times(0)).deleteBucket("test-prod-bucket");
+        verify(client).deleteBucket("test-dev-bucket");
+        verify(client).deleteBucket("test-prod-bucket");
     }
 
     private ObjectListing createFileList() {

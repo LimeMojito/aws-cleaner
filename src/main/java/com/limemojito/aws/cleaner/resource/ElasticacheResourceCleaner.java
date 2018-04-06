@@ -8,7 +8,7 @@
 
 package com.limemojito.aws.cleaner.resource;
 
-import com.amazonaws.services.elasticache.AmazonElastiCacheClient;
+import com.amazonaws.services.elasticache.AmazonElastiCache;
 import com.amazonaws.services.elasticache.model.CacheCluster;
 import com.amazonaws.services.elasticache.model.DeleteCacheClusterRequest;
 import com.amazonaws.services.elasticache.model.DescribeCacheClustersResult;
@@ -19,15 +19,13 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 
-import static java.lang.String.format;
-
 @Service
 public class ElasticacheResourceCleaner extends BaseAwsResourceCleaner {
     private static final Logger LOGGER = LoggerFactory.getLogger(ElasticacheResourceCleaner.class);
-    private final AmazonElastiCacheClient client;
+    private final AmazonElastiCache client;
 
     @Autowired
-    public ElasticacheResourceCleaner(AmazonElastiCacheClient client) {
+    public ElasticacheResourceCleaner(AmazonElastiCache client) {
         this.client = client;
     }
 
@@ -37,16 +35,13 @@ public class ElasticacheResourceCleaner extends BaseAwsResourceCleaner {
     }
 
     @Override
-    public void clean(String environment) {
-        LOGGER.info("Cleaning {} elasticache", environment);
+    public void clean() {
+        LOGGER.info("Cleaning elasticache");
         DescribeCacheClustersResult results = client.describeCacheClusters();
         final List<CacheCluster> cacheClusters = results.getCacheClusters();
         LOGGER.debug("Found {} clusters", cacheClusters.size());
-        final String clusterPrefix = ALL_ENVIRONMENTS.equals(environment) ? "" : format("%s-", environment).toLowerCase();
-
         cacheClusters.stream()
-                     .filter(cacheCluster -> (cacheCluster.getCacheClusterId()
-                                                          .startsWith(clusterPrefix) && "available".equals(cacheCluster.getCacheClusterStatus())))
+                     .filter(cacheCluster -> ("available".equals(cacheCluster.getCacheClusterStatus())))
                      .forEach(cacheCluster1 -> performWithThrottle(() -> {
                          final String cacheClusterId = cacheCluster1.getCacheClusterId();
                          LOGGER.info("Removing {} cache cluster", cacheClusterId);

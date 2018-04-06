@@ -8,7 +8,7 @@
 
 package com.limemojito.aws.cleaner.resource;
 
-import com.amazonaws.services.cloudformation.AmazonCloudFormationClient;
+import com.amazonaws.services.cloudformation.AmazonCloudFormation;
 import com.amazonaws.services.cloudformation.model.*;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -30,18 +30,18 @@ public class CloudFormationResourceCleaner extends BaseAwsResourceCleaner {
     private static final Logger LOGGER = LoggerFactory.getLogger(CloudFormationResourceCleaner.class);
     private static final String DELETE_COMPLETE = "DELETE_COMPLETE";
     private static final long STATUS_DELAY = 5_000L;
-    private final AmazonCloudFormationClient client;
-    private final Collection<String> permStackPrefixes;
+    private final AmazonCloudFormation client;
+    private final Collection<String> permanentStacks;
     private AmazonCloudFormationException deleteError;
 
     @Autowired
-    public CloudFormationResourceCleaner(AmazonCloudFormationClient client,
+    public CloudFormationResourceCleaner(AmazonCloudFormation client,
                                          @Value("${cleaner.cloudformation.whitelist}") String whitelistCsv) {
         this.client = client;
-        this.permStackPrefixes = Arrays.stream(split(whitelistCsv, ','))
-                                       .map(StringUtils::trimToEmpty)
-                                       .collect(toList());
-        LOGGER.info("Ignoring {}", this.permStackPrefixes);
+        this.permanentStacks = Arrays.stream(split(whitelistCsv, ','))
+                                     .map(StringUtils::trimToEmpty)
+                                     .collect(toList());
+        LOGGER.info("Ignoring {}", this.permanentStacks);
     }
 
     @Override
@@ -50,26 +50,26 @@ public class CloudFormationResourceCleaner extends BaseAwsResourceCleaner {
     }
 
     @Override
-    public void clean(String environment) {
+    public void clean() {
         LOGGER.debug("Requesting stacks");
         final ListStacksResult result = client.listStacks();
         final List<StackSummary> stacks = result.getStackSummaries();
         LOGGER.debug("{} stacks found", stacks.size());
         this.deleteError = null;
         stacks.stream()
-              .filter(summary -> isKillStack(environment, summary)).forEach(this::deleteAndContinue);
+              .filter(this::isKillStack)
+              .forEach(this::deleteAndContinue);
         if (deleteError != null) {
             throw deleteError;
         }
     }
 
-    private boolean isKillStack(String environment, StackSummary summary) {
-        final String stackPrefix = ALL_ENVIRONMENTS.equals(environment) ? "" : environment;
+    private boolean isKillStack(StackSummary summary) {
         final String stackStatus = summary.getStackStatus();
         final boolean statusOkToRemove = canBeRemoved(stackStatus);
         if (statusOkToRemove) {
             final String stackName = summary.getStackName();
-            final boolean killStack = (!isPermStackName(stackName)) && stackName.startsWith(stackPrefix);
+            final boolean killStack = (!isPermStackName(stackName));
             if (!killStack) {
                 LOGGER.info("Preserving stack named " + stackName);
             }
@@ -79,7 +79,7 @@ public class CloudFormationResourceCleaner extends BaseAwsResourceCleaner {
     }
 
     private boolean isPermStackName(String stackName) {
-        for (String permStackPrefix : permStackPrefixes) {
+        for (String permStackPrefix : permanentStacks) {
             if (stackName.startsWith(permStackPrefix)) {
                 return true;
             }

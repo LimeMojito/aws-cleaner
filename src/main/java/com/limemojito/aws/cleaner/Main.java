@@ -16,8 +16,6 @@ import org.springframework.context.annotation.AnnotationConfigApplicationContext
 import org.springframework.context.support.AbstractApplicationContext;
 import org.springframework.stereotype.Service;
 
-import static java.lang.String.format;
-
 @Service
 public class Main {
     private static final Logger LOGGER = LoggerFactory.getLogger(Main.class);
@@ -31,36 +29,23 @@ public class Main {
     }
 
     public static void main(String... args) {
-        if (args.length < 1) {
-            throw new IllegalStateException("Arguments to main need to include the environment");
-        }
         LOGGER.info("Initialising");
-        final String environment = args[0];
 
         AbstractApplicationContext context = new AnnotationConfigApplicationContext(CleanerConfig.class);
         context.registerShutdownHook();
         Main main = context.getBean(Main.class);
-        main.cleanEnvironment(environment);
+        main.cleanEnvironment();
     }
 
-    public void cleanEnvironment(String environment) {
-        verifyEnvironment(environment);
+    public void cleanEnvironment() {
         if (!userChecker.isOK()) {
             throw new IllegalStateException("Check .aws/credentials as user is not allowed for cleaning");
         }
-        LOGGER.info("Cleaning AWS resources in {}", environment);
+        LOGGER.info("Cleaning AWS resources");
         for (ResourceCleaner resourceCleaner : resourceCleaners) {
             LOGGER.info("Processing {}", resourceCleaner.getName());
-            resourceCleaner.clean(environment);
+            resourceCleaner.clean();
         }
         LOGGER.debug("Resource cleaning completed");
-    }
-
-    private void verifyEnvironment(String environment) {
-        if (!(ResourceCleaner.LOCAL_ENVIRONMENT.equals(environment)
-                || ResourceCleaner.DEV_ENVIRONMENT.equals(environment)
-                || ResourceCleaner.ALL_ENVIRONMENTS.equals(environment))) {
-            throw new IllegalStateException(format("Environment %s is not supported", environment));
-        }
     }
 }

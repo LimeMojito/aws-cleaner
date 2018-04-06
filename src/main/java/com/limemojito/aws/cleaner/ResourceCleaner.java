@@ -9,11 +9,7 @@
 package com.limemojito.aws.cleaner;
 
 public interface ResourceCleaner {
-    String LOCAL_ENVIRONMENT = "LOCAL";
-    String DEV_ENVIRONMENT = "DEV";
-    String ALL_ENVIRONMENTS = "ALL";
-
     String getName();
 
-    void clean(String environment);
+    void clean();
 }

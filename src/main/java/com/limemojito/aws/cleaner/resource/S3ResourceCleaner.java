@@ -8,7 +8,7 @@
 
 package com.limemojito.aws.cleaner.resource;
 
-import com.amazonaws.services.s3.AmazonS3Client;
+import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,15 +19,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static java.lang.String.format;
-
 @Service
 public class S3ResourceCleaner extends BaseAwsResourceCleaner {
     private static final Logger LOGGER = LoggerFactory.getLogger(S3ResourceCleaner.class);
-    private final AmazonS3Client client;
+    private final AmazonS3 client;
 
     @Autowired
-    public S3ResourceCleaner(AmazonS3Client client) {
+    public S3ResourceCleaner(AmazonS3 client) {
         this.client = client;
     }
 
@@ -37,14 +35,11 @@ public class S3ResourceCleaner extends BaseAwsResourceCleaner {
     }
 
     @Override
-    public void clean(String environment) {
+    public void clean() {
         LOGGER.debug("Listing s3 buckets");
         final List<Bucket> buckets = client.listBuckets();
         LOGGER.debug("Found {} buckets", buckets.size());
-        final String bucketEnvironment = ALL_ENVIRONMENTS.equals(environment) ? "" : format("-%s-", environment.toLowerCase());
-        buckets.stream()
-               .filter(bucket -> bucket.getName().contains(bucketEnvironment))
-               .forEach(bucket -> performWithThrottle(() -> deleteBucket(bucket)));
+        buckets.forEach(bucket -> performWithThrottle(() -> deleteBucket(bucket)));
     }
 
     private void deleteBucket(Bucket bucket) {

@@ -8,7 +8,7 @@
 
 package com.limemojito.aws.cleaner.resource;
 
-import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient;
+import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.model.ListTablesResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,15 +17,13 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 
-import static java.lang.String.format;
-
 @Service
 public class DynamoResourceCleaner extends BaseAwsResourceCleaner {
     private static final Logger LOGGER = LoggerFactory.getLogger(DynamoResourceCleaner.class);
-    private final AmazonDynamoDBClient dbClient;
+    private final AmazonDynamoDB dbClient;
 
     @Autowired
-    public DynamoResourceCleaner(AmazonDynamoDBClient dbClient) {
+    public DynamoResourceCleaner(AmazonDynamoDB dbClient) {
         this.dbClient = dbClient;
     }
 
@@ -35,13 +33,12 @@ public class DynamoResourceCleaner extends BaseAwsResourceCleaner {
     }
 
     @Override
-    public void clean(String environment) {
-        LOGGER.debug("Scanning tables for {} prefix", environment);
+    public void clean() {
+        LOGGER.debug("Scanning tables");
         final ListTablesResult listTablesResult = dbClient.listTables();
         final List<String> tableNames = listTablesResult.getTableNames();
         LOGGER.debug("Scanning {} tables", tableNames.size());
-        final String tablePrefix = ALL_ENVIRONMENTS.equals(environment) ? "" : format("%s-", environment);
-        tableNames.stream().filter(s -> s.startsWith(tablePrefix)).forEach((tableName) -> performWithThrottle(() -> {
+        tableNames.stream().forEach((tableName) -> performWithThrottle(() -> {
             LOGGER.debug("Deleting table {}", tableName);
             dbClient.deleteTable(tableName);
         }));
