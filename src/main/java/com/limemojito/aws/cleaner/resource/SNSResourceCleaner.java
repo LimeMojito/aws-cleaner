@@ -9,22 +9,26 @@
 package com.limemojito.aws.cleaner.resource;
 
 import com.amazonaws.services.sns.AmazonSNS;
-import com.amazonaws.services.sns.model.*;
+import com.amazonaws.services.sns.model.Subscription;
+import com.amazonaws.services.sns.model.Topic;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
 public class SNSResourceCleaner extends CompositeResourceCleaner {
     private static final Logger LOGGER = LoggerFactory.getLogger(SNSResourceCleaner.class);
+    private static List<String> topics;
 
     @Autowired
     public SNSResourceCleaner(AmazonSNS client) {
-        super(new SnsSubscriptionCleaner(client), new SnsPlatformCleaner(client), new SnsTopicCleaner(client));
+        super(new SnsSubscriptionCleaner(client), new SnsTopicCleaner(client));
+        topics = client.listTopics().getTopics().stream().map(Topic::getTopicArn).collect(Collectors.toList());
     }
 
     private static class SnsTopicCleaner extends PhysicalResourceCleaner {
@@ -37,7 +41,7 @@ public class SNSResourceCleaner extends CompositeResourceCleaner {
 
         @Override
         protected List<String> getPhysicalResourceIds() {
-            return client.listTopics().getTopics().stream().map(Topic::getTopicArn).collect(Collectors.toList());
+            return topics;
         }
 
         @Override
@@ -56,49 +60,20 @@ public class SNSResourceCleaner extends CompositeResourceCleaner {
 
         @Override
         protected List<String> getPhysicalResourceIds() {
-            return client.listTopics().getTopics().stream().map(Topic::getTopicArn).collect(Collectors.toList());
-        }
-
-        @Override
-        protected void performDelete(String physicalId) {
-            LOGGER.debug("Listing subscriptions for {}", physicalId);
-            for (Subscription subscription : client.listSubscriptionsByTopic(physicalId).getSubscriptions()) {
-                String subscriptionArn = subscription.getSubscriptionArn();
-                LOGGER.debug("Unsubscribe {}", subscriptionArn);
-                Throttle.performWithThrottle(() -> client.unsubscribe(subscriptionArn));
-            }
-        }
-    }
-
-    private static class SnsPlatformCleaner extends PhysicalResourceCleaner {
-        private final AmazonSNS client;
-
-        SnsPlatformCleaner(AmazonSNS client) {
-            super();
-            this.client = client;
-        }
-
-        @Override
-        protected List<String> getPhysicalResourceIds() {
-            return client.listPlatformApplications()
-                         .getPlatformApplications()
-                         .stream()
-                         .map(PlatformApplication::getPlatformApplicationArn)
+            LOGGER.info("Fetching Subscriptions.");
+            return topics.stream()
+                         .map(topic -> client.listSubscriptionsByTopic(topic)
+                                             .getSubscriptions()
+                                             .stream()
+                                             .map(Subscription::getSubscriptionArn)
+                                             .collect(Collectors.toList()))
+                         .flatMap(Collection::stream)
                          .collect(Collectors.toList());
         }
 
         @Override
         protected void performDelete(String physicalId) {
-            LOGGER.debug("Removing endpoints from {}", physicalId);
-            final ListEndpointsByPlatformApplicationRequest applicationRequest = new ListEndpointsByPlatformApplicationRequest()
-                    .withPlatformApplicationArn(physicalId);
-            ListEndpointsByPlatformApplicationResult endpoints = client.listEndpointsByPlatformApplication(applicationRequest);
-            for (Endpoint endpoint : endpoints.getEndpoints()) {
-                String endpointArn = endpoint.getEndpointArn();
-                LOGGER.debug("Removing {}", endpointArn);
-                Throttle.performWithThrottle(() -> client.deleteEndpoint(new DeleteEndpointRequest().withEndpointArn(endpointArn)));
-            }
+            client.unsubscribe(physicalId);
         }
     }
-
 }

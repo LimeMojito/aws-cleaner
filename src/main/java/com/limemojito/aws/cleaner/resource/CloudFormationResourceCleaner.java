@@ -35,6 +35,7 @@ public class CloudFormationResourceCleaner implements ResourceCleaner {
     private final AmazonCloudFormation client;
     private final Collection<String> permanentStacks;
     private AmazonCloudFormationException deleteError;
+    private PhysicalDeletionFilter filter;
 
     @Autowired
     public CloudFormationResourceCleaner(AmazonCloudFormation client,
@@ -44,6 +45,11 @@ public class CloudFormationResourceCleaner implements ResourceCleaner {
                                      .map(StringUtils::trimToEmpty)
                                      .collect(toList());
         LOGGER.info("Ignoring {}", this.permanentStacks);
+    }
+
+    @Override
+    public void setFilter(PhysicalDeletionFilter filter) {
+        LOGGER.debug("Ignoring filter {}", filter.getClass());
     }
 
     @Override

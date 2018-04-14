@@ -9,6 +9,7 @@
 package com.limemojito.aws.cleaner.resource;
 
 import com.limemojito.aws.cleaner.ResourceCleaner;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.Arrays;
 import java.util.List;
@@ -18,6 +19,11 @@ public abstract class CompositeResourceCleaner implements ResourceCleaner {
 
     public CompositeResourceCleaner(ResourceCleaner... cleaners) {
         this.components = Arrays.asList(cleaners);
+    }
+
+    @Autowired
+    public void setFilter(PhysicalDeletionFilter filter) {
+        this.components.forEach(o->o.setFilter(filter));
     }
 
     @Override

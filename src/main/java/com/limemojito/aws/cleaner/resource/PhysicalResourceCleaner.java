@@ -23,6 +23,7 @@ public abstract class PhysicalResourceCleaner implements ResourceCleaner {
         filter = physicalId -> true;
     }
 
+    @Override
     @Autowired
     public void setFilter(PhysicalDeletionFilter filter) {
         this.filter = filter;
@@ -32,10 +33,12 @@ public abstract class PhysicalResourceCleaner implements ResourceCleaner {
     public void clean() {
         final List<String> physicalResourceIdList = getPhysicalResourceIds();
         if (!physicalResourceIdList.isEmpty()) {
-            LOGGER.debug("Deleting {} resources", physicalResourceIdList.size());
             physicalResourceIdList.stream()
                                   .filter(p -> filter.shouldDelete(p))
-                                  .forEach((physicalId) -> Throttle.performWithThrottle(() -> performDelete(physicalId)));
+                                  .forEach((physicalId) -> {
+                                      LOGGER.debug("Deleting {}", physicalId);
+                                      Throttle.performWithThrottle(() -> performDelete(physicalId));
+                                  });
         }
     }
 
