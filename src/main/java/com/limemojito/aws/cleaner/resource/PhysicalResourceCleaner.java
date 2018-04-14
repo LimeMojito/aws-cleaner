@@ -31,10 +31,12 @@ public abstract class PhysicalResourceCleaner implements ResourceCleaner {
     @Override
     public void clean() {
         final List<String> physicalResourceIdList = getPhysicalResourceIds();
-        LOGGER.debug("Deleting {} resources", physicalResourceIdList.size());
-        physicalResourceIdList.stream()
-                              .filter(p -> filter.shouldDelete(p))
-                              .forEach((physicalId) -> Throttle.performWithThrottle(() -> performDelete(physicalId)));
+        if (!physicalResourceIdList.isEmpty()) {
+            LOGGER.debug("Deleting {} resources", physicalResourceIdList.size());
+            physicalResourceIdList.stream()
+                                  .filter(p -> filter.shouldDelete(p))
+                                  .forEach((physicalId) -> Throttle.performWithThrottle(() -> performDelete(physicalId)));
+        }
     }
 
     protected abstract List<String> getPhysicalResourceIds();
