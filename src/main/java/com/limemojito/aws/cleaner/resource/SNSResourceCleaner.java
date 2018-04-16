@@ -16,65 +16,40 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
-public class SNSResourceCleaner extends CompositeResourceCleaner {
+public class SNSResourceCleaner extends PhysicalResourceCleaner {
     private static final Logger LOGGER = LoggerFactory.getLogger(SNSResourceCleaner.class);
-    private static List<String> topics;
+    private final AmazonSNS client;
 
     @Autowired
     public SNSResourceCleaner(AmazonSNS client) {
-        super(new SnsSubscriptionCleaner(client), new SnsTopicCleaner(client));
-        topics = client.listTopics().getTopics().stream().map(Topic::getTopicArn).collect(Collectors.toList());
+        this.client = client;
     }
 
-    private static class SnsTopicCleaner extends PhysicalResourceCleaner {
-        private final AmazonSNS client;
-
-        SnsTopicCleaner(AmazonSNS client) {
-            super();
-            this.client = client;
-        }
-
-        @Override
-        protected List<String> getPhysicalResourceIds() {
-            return topics;
-        }
-
-        @Override
-        protected void performDelete(String physicalId) {
-            client.deleteTopic(physicalId);
-        }
+    @Override
+    protected List<String> getPhysicalResourceIds() {
+        return client.listTopics().getTopics().stream()
+                     .map(Topic::getTopicArn)
+                     .collect(Collectors.toList());
     }
 
-    private static class SnsSubscriptionCleaner extends PhysicalResourceCleaner {
-        private final AmazonSNS client;
+    protected void performDelete(String physicalId) {
+        LOGGER.info("Deleting Topic {} and all subscriptions", physicalId);
+        client.listSubscriptionsByTopic(physicalId)
+              .getSubscriptions()
+              .stream()
+              .map(Subscription::getSubscriptionArn)
+              .forEach(this::unsubscribe);
+        client.deleteTopic(physicalId);
+    }
 
-        SnsSubscriptionCleaner(AmazonSNS client) {
-            super();
-            this.client = client;
-        }
-
-        @Override
-        protected List<String> getPhysicalResourceIds() {
-            LOGGER.info("Fetching Subscriptions.");
-            return topics.stream()
-                         .map(topic -> client.listSubscriptionsByTopic(topic)
-                                             .getSubscriptions()
-                                             .stream()
-                                             .map(Subscription::getSubscriptionArn)
-                                             .collect(Collectors.toList()))
-                         .flatMap(Collection::stream)
-                         .collect(Collectors.toList());
-        }
-
-        @Override
-        protected void performDelete(String physicalId) {
-            LOGGER.info("Ignoring delete request for {} as they can't be detected in cloudformation.", physicalId);
-// Note these subscription ids are not FOUND even if in cloudformation.           client.unsubscribe(physicalId);
-        }
+    private void unsubscribe(String subArn) {
+        Throttle.performWithThrottle(() -> {
+            LOGGER.info("Unsubscribe {}", subArn);
+            client.unsubscribe(subArn);
+        });
     }
 }
