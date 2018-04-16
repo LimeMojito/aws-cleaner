@@ -73,7 +73,8 @@ public class SNSResourceCleaner extends CompositeResourceCleaner {
 
         @Override
         protected void performDelete(String physicalId) {
-            client.unsubscribe(physicalId);
+            LOGGER.info("Ignoring delete request for {} as they can't be detected in cloudformation.", physicalId);
+// Note these subscription ids are not FOUND even if in cloudformation.           client.unsubscribe(physicalId);
         }
     }
 }
