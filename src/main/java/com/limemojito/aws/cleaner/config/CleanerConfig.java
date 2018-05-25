@@ -35,6 +35,7 @@ import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.sns.AmazonSNS;
 import com.amazonaws.services.sns.AmazonSNSClient;
 import com.limemojito.aws.cleaner.Main;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
@@ -45,10 +46,9 @@ import org.springframework.context.annotation.PropertySource;
 @ComponentScan(basePackageClasses = Main.class)
 public class CleanerConfig {
 
-    private final Regions defaultRegion;
-
-    public CleanerConfig() {
-        defaultRegion = Regions.US_WEST_2;
+    @Bean
+    public Regions region(@Value("${cleaner.region}") String regionName) {
+        return Regions.fromName(regionName);
     }
 
     @Bean
@@ -64,7 +64,7 @@ public class CleanerConfig {
     }
 
     @Bean
-    public AmazonDynamoDB dynamoDBClient(AWSCredentialsProvider credentialsProvider) {
+    public AmazonDynamoDB dynamoDBClient(AWSCredentialsProvider credentialsProvider, Regions defaultRegion) {
         return AmazonDynamoDBClient.builder()
                                    .withCredentials(credentialsProvider)
                                    .withRegion(defaultRegion)
@@ -72,7 +72,7 @@ public class CleanerConfig {
     }
 
     @Bean
-    public AWSElasticBeanstalk ebClient(AWSCredentialsProvider credentialsProvider) {
+    public AWSElasticBeanstalk ebClient(AWSCredentialsProvider credentialsProvider, Regions defaultRegion) {
         return AWSElasticBeanstalkClient.builder()
                                         .withCredentials(credentialsProvider)
                                         .withRegion(defaultRegion)
@@ -80,7 +80,7 @@ public class CleanerConfig {
     }
 
     @Bean
-    public AmazonS3 s3Client(AWSCredentialsProvider credentialsProvider) {
+    public AmazonS3 s3Client(AWSCredentialsProvider credentialsProvider, Regions defaultRegion) {
         return AmazonS3Client.builder()
                              .withCredentials(credentialsProvider)
                              .withRegion(defaultRegion)
@@ -88,7 +88,7 @@ public class CleanerConfig {
     }
 
     @Bean
-    public AmazonSNS snsClient(AWSCredentialsProvider credentialsProvider) {
+    public AmazonSNS snsClient(AWSCredentialsProvider credentialsProvider, Regions defaultRegion) {
         return AmazonSNSClient.builder()
                               .withCredentials(credentialsProvider)
                               .withRegion(defaultRegion)
@@ -96,7 +96,7 @@ public class CleanerConfig {
     }
 
     @Bean
-    public AmazonElastiCache elastiCacheClient(AWSCredentialsProvider credentialsProvider) {
+    public AmazonElastiCache elastiCacheClient(AWSCredentialsProvider credentialsProvider, Regions defaultRegion) {
         return AmazonElastiCacheClient.builder()
                                       .withCredentials(credentialsProvider)
                                       .withRegion(defaultRegion)
@@ -104,7 +104,7 @@ public class CleanerConfig {
     }
 
     @Bean
-    public AmazonCloudFormation cloudFormationClient(AWSCredentialsProvider credentialsProvider) {
+    public AmazonCloudFormation cloudFormationClient(AWSCredentialsProvider credentialsProvider, Regions defaultRegion) {
         return AmazonCloudFormationClient.builder()
                                          .withCredentials(credentialsProvider)
                                          .withRegion(defaultRegion)

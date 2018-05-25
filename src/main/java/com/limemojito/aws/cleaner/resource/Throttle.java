@@ -26,10 +26,6 @@ public class Throttle {
     private static final int BACKOFF_SECONDS = 2;
     private static final long SECONDS_TO_MILLIS = 1_000L;
 
-    interface AwsAction {
-        void performAction();
-    }
-
     static void performWithThrottle(AwsAction action) {
         try {
             action.performAction();
@@ -46,5 +42,9 @@ public class Throttle {
                 throw e;
             }
         }
+    }
+
+    interface AwsAction {
+        void performAction();
     }
 }

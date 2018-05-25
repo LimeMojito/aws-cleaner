@@ -43,7 +43,6 @@ public class ElasticacheResourceCleaner extends PhysicalResourceCleaner {
 
     @Override
     protected List<String> getPhysicalResourceIds() {
-        LOGGER.info("Cleaning elasticache");
         DescribeCacheClustersResult results = client.describeCacheClusters();
         final List<CacheCluster> cacheClusters = results.getCacheClusters();
         LOGGER.debug("Found {} clusters", cacheClusters.size());
@@ -55,6 +54,7 @@ public class ElasticacheResourceCleaner extends PhysicalResourceCleaner {
 
     @Override
     protected void performDelete(String physicalId) {
+        LOGGER.info("Deleting cache {}", physicalId);
         client.deleteCacheCluster(new DeleteCacheClusterRequest(physicalId));
     }
 }

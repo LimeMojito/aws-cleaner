@@ -27,7 +27,7 @@
         </logger>
     -->
 
-    <logger name="com.limemojito" level="DEBUG" additivity="false">
+    <logger name="com.limemojito" level="info" additivity="false">
         <appender-ref ref="STDOUT"/>
     </logger>
 

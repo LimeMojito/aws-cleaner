@@ -17,27 +17,27 @@
 
 package com.limemojito.aws.cleaner;
 
+import com.amazonaws.regions.Regions;
+import org.junit.Rule;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnit;
+import org.mockito.junit.MockitoRule;
 
-import static org.mockito.Mockito.when;
+import static com.amazonaws.regions.Regions.US_WEST_2;
+import static java.util.Collections.singletonList;
 
-@RunWith(MockitoJUnitRunner.class)
 public class MainTest {
+
+    @Rule
+    public final MockitoRule mockitoRule = MockitoJUnit.rule();
 
     @Mock
     private ResourceCleaner cleaner;
 
-    @Mock
-    private UserChecker userChecker;
-
     @Test
     public void shouldCallCleanEnvironment() throws Exception {
-        when(userChecker.isOK()).thenReturn(true);
-
-        Main main = new Main(userChecker, cleaner);
+        Main main = new Main(singletonList(cleaner), US_WEST_2);
         main.cleanEnvironment();
     }
 }

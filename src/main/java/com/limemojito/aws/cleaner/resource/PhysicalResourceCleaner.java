@@ -27,6 +27,7 @@ import java.util.List;
 public abstract class PhysicalResourceCleaner implements ResourceCleaner {
     private static final Logger LOGGER = LoggerFactory.getLogger(PhysicalResourceCleaner.class);
     private PhysicalDeletionFilter filter;
+    private boolean commit;
 
     public PhysicalResourceCleaner() {
         filter = physicalId -> true;
@@ -39,14 +40,22 @@ public abstract class PhysicalResourceCleaner implements ResourceCleaner {
     }
 
     @Override
+    public void setCommit(boolean commit) {
+        this.commit = commit;
+    }
+
+    @Override
     public void clean() {
         final List<String> physicalResourceIdList = getPhysicalResourceIds();
         if (!physicalResourceIdList.isEmpty()) {
             physicalResourceIdList.stream()
                                   .filter(p -> filter.shouldDelete(p))
                                   .forEach((physicalId) -> {
-                                      LOGGER.debug("Deleting {}", physicalId);
-                                      Throttle.performWithThrottle(() -> performDelete(physicalId));
+                                      if (!commit) {
+                                          LOGGER.info("Would delete {}", physicalId);
+                                      } else {
+                                          Throttle.performWithThrottle(() -> performDelete(physicalId));
+                                      }
                                   });
         }
     }

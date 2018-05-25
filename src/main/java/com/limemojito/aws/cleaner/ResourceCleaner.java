@@ -25,4 +25,6 @@ public interface ResourceCleaner {
     void setFilter(PhysicalDeletionFilter filter);
 
     void clean();
+
+    void setCommit(boolean commit);
 }

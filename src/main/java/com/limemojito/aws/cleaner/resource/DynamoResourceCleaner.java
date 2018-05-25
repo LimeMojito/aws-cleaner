@@ -44,7 +44,7 @@ public class DynamoResourceCleaner extends PhysicalResourceCleaner {
 
     @Override
     protected void performDelete(String physicalId) {
-        LOGGER.debug("Deleting resource {}", physicalId);
+        LOGGER.info("Deleting resource {}", physicalId);
         dbClient.deleteTable(physicalId);
     }
 }

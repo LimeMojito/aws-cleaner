@@ -45,6 +45,7 @@ public class CloudFormationResourceCleaner implements ResourceCleaner {
     private final Collection<String> permanentStacks;
     private AmazonCloudFormationException deleteError;
     private PhysicalDeletionFilter filter;
+    private boolean commit;
 
     @Autowired
     public CloudFormationResourceCleaner(AmazonCloudFormation client,
@@ -53,7 +54,14 @@ public class CloudFormationResourceCleaner implements ResourceCleaner {
         this.permanentStacks = Arrays.stream(split(whitelistCsv, ','))
                                      .map(StringUtils::trimToEmpty)
                                      .collect(toList());
-        LOGGER.info("Ignoring {}", this.permanentStacks);
+        if (!permanentStacks.isEmpty()) {
+            LOGGER.info("Ignoring stacks with prefix {}", this.permanentStacks);
+        }
+    }
+
+    @Override
+    public void setCommit(boolean commit) {
+        this.commit = commit;
     }
 
     @Override
@@ -112,11 +120,15 @@ public class CloudFormationResourceCleaner implements ResourceCleaner {
     }
 
     private void deleteAndContinue(StackSummary stackSummary) {
-        try {
-            Throttle.performWithThrottle(() -> deleteStack(stackSummary));
-        } catch (AmazonCloudFormationException e) {
-            LOGGER.warn("Could not delete stack {}. {}", stackSummary.getStackName(), e.getErrorMessage());
-            deleteError = e;
+        if (commit) {
+            try {
+                Throttle.performWithThrottle(() -> deleteStack(stackSummary));
+            } catch (AmazonCloudFormationException e) {
+                LOGGER.warn("Could not delete stack {}. {}", stackSummary.getStackName(), e.getErrorMessage());
+                deleteError = e;
+            }
+        } else {
+            LOGGER.info("Would delete stack {}", stackSummary.getStackName());
         }
     }
 

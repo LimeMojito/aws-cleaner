@@ -53,7 +53,7 @@ public class S3ResourceCleaner extends PhysicalResourceCleaner {
     }
 
     private void deleteBucket(String bucketName) {
-        LOGGER.debug("Deleting bucket {}", bucketName);
+        LOGGER.info("Deleting bucket {}", bucketName);
         try {
             client.deleteBucket(bucketName);
         } catch (AmazonS3Exception e) {
@@ -73,10 +73,10 @@ public class S3ResourceCleaner extends PhysicalResourceCleaner {
     }
 
     private void deleteAll(String bucketName) {
-        LOGGER.debug("Deleting all content in {}", bucketName);
         final ObjectListing objectListing = client.listObjects(bucketName);
         final List<S3ObjectSummary> objectSummaries = objectListing.getObjectSummaries();
         if (objectSummaries.size() > 0) {
+            LOGGER.info("Deleting all content in {}", bucketName);
             LOGGER.debug("Creating delete objects request for {} objects", objectSummaries.size());
             DeleteObjectsRequest request = createDeleteFilesRequest(objectListing);
             client.deleteObjects(request);
