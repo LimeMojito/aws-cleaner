@@ -41,7 +41,16 @@
         <coverage.exclude.pattern.3>**CloudFormationResourceCleaner</coverage.exclude.pattern.3>
     </properties>
 
+    <name>AWS Cleaner.</name>
+    <description>
+        Eats an AWS account.  You can specify whitelist for cloudformation stacks, and resources that are
+        in a cloudformation stack will not be destroyed.
+    </description>
+    <url>${bitbucket.url}</url>
     <scm>
+        <connection>${scm.url}</connection>
+        <developerConnection>${scm.url}</developerConnection>
+        <url>${bitbucket.url}</url>
         <tag>master</tag>
     </scm>
 
