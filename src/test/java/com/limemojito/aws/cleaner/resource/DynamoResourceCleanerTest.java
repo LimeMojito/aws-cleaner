@@ -43,6 +43,7 @@ public class DynamoResourceCleanerTest extends AwsResourceCleanerUnitTestCase {
     @Before
     public void setUp() throws Exception {
         cleaner = new DynamoResourceCleaner(client);
+        cleaner.setCommit(true);
     }
 
     @Test

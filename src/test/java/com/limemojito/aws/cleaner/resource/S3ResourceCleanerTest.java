@@ -47,6 +47,7 @@ public class S3ResourceCleanerTest extends AwsResourceCleanerUnitTestCase {
     @Before
     public void setUp() throws Exception {
         cleaner = new S3ResourceCleaner(client);
+        cleaner.setCommit(true);
     }
 
     @Test
