@@ -15,7 +15,8 @@
   ~    limitations under the License.
   ~
   -->
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.limemojito.oss.aws</groupId>
@@ -27,7 +28,7 @@
         <groupId>com.limemojito.oss.standards</groupId>
         <artifactId>java-development</artifactId>
         <version>1.0.0</version>
-        <relativePath />
+        <relativePath/>
     </parent>
 
     <properties>
@@ -35,14 +36,13 @@
         <git.url>git@bitbucket.org:limemojito/aws-cleaner.git</git.url>
 
         <version.aws.java.sdk>1.11.269</version.aws.java.sdk>
-        <coverage.exclude.pattern.1>**BaseAwsResourceCleaner</coverage.exclude.pattern.1>
-        <coverage.exclude.pattern.2>**ElasticacheResourceCleaner</coverage.exclude.pattern.2>
-        <coverage.exclude.pattern.3>**CloudFormationResourceCleaner</coverage.exclude.pattern.3>
+        <coverage.exclude.pattern.1>**Main</coverage.exclude.pattern.1>
+        <coverage.exclude.pattern.2>**resource*</coverage.exclude.pattern.2>
     </properties>
 
     <name>AWS Cleaner.</name>
     <description>
-        Eats an AWS account.  You can specify whitelist for cloudformation stacks, and resources that are
+        Eats an AWS account. You can specify whitelist for cloudformation stacks, and resources that are
         in a cloudformation stack will not be destroyed.
     </description>
     <url>${bitbucket.url}</url>
@@ -55,6 +55,39 @@
 
     <build>
         <plugins>
+            <plugin>
+                <artifactId>maven-checkstyle-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <artifactId>maven-compiler-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <artifactId>maven-enforcer-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <artifactId>maven-source-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <!--TODO remove when next release of standards -->
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <artifactId>maven-surefire-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <artifactId>maven-failsafe-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+            </plugin>
             <plugin>
                 <artifactId>maven-assembly-plugin</artifactId>
                 <version>2.4.1</version>
