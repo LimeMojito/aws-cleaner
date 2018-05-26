@@ -27,7 +27,7 @@
     <parent>
         <groupId>com.limemojito.oss.standards</groupId>
         <artifactId>java-development</artifactId>
-        <version>1.0.0</version>
+        <version>1.0.1</version>
         <relativePath/>
     </parent>
 
@@ -36,9 +36,8 @@
         <git.url>git@bitbucket.org:limemojito/aws-cleaner.git</git.url>
 
         <version.aws.java.sdk>1.11.269</version.aws.java.sdk>
-        <coverage.exclude.pattern.1>**BaseAwsResourceCleaner</coverage.exclude.pattern.1>
-        <coverage.exclude.pattern.2>**ElasticacheResourceCleaner</coverage.exclude.pattern.2>
-        <coverage.exclude.pattern.3>**CloudFormationResourceCleaner</coverage.exclude.pattern.3>
+        <coverage.exclude.pattern.1>**Main</coverage.exclude.pattern.1>
+        <coverage.exclude.pattern.2>**resource*</coverage.exclude.pattern.2>
     </properties>
 
     <name>AWS Cleaner.</name>
@@ -48,14 +47,40 @@
     </description>
     <url>${bitbucket.url}</url>
     <scm>
-        <connection>${scm.url}</connection>
-        <developerConnection>${scm.url}</developerConnection>
+        <connection>${lime.scm.url}</connection>
+        <developerConnection>${lime.scm.url}</developerConnection>
         <url>${bitbucket.url}</url>
         <tag>master</tag>
     </scm>
+    <issueManagement>
+        <system>Bitbucket</system>
+        <url>${bitbucket.url}/issues</url>
+    </issueManagement>
 
     <build>
         <plugins>
+            <plugin>
+                <artifactId>maven-enforcer-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <artifactId>maven-checkstyle-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <artifactId>maven-javadoc-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <artifactId>maven-source-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <artifactId>maven-surefire-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <artifactId>maven-failsafe-plugin</artifactId>
+            </plugin>
             <plugin>
                 <artifactId>maven-assembly-plugin</artifactId>
                 <version>2.4.1</version>
