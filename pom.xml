@@ -39,7 +39,7 @@
         <coverage.exclude.pattern.2>**resource*</coverage.exclude.pattern.2>
     </properties>
 
-    <name>AWS Cleaner.</name>
+    <name>AWS Cleaner</name>
     <description>
         Eats an AWS account.  You can specify whitelist for cloudformation stacks, and resources that are
         in a cloudformation stack will not be destroyed.
