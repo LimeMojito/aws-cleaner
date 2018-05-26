@@ -25,6 +25,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Service;
 
 import java.util.Arrays;
@@ -35,7 +36,9 @@ import static com.amazonaws.services.cloudformation.model.StackStatus.*;
 import static java.lang.String.format;
 import static java.util.stream.Collectors.toList;
 import static org.apache.commons.lang3.StringUtils.split;
+import static org.springframework.core.Ordered.HIGHEST_PRECEDENCE;
 
+@Order(HIGHEST_PRECEDENCE)
 @Service
 public class CloudFormationResourceCleaner implements ResourceCleaner {
     private static final Logger LOGGER = LoggerFactory.getLogger(CloudFormationResourceCleaner.class);
