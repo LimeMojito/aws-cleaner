@@ -18,6 +18,8 @@
 package com.limemojito.aws.cleaner.config;
 
 import com.amazonaws.auth.AWSCredentialsProvider;
+import com.amazonaws.auth.AWSStaticCredentialsProvider;
+import com.amazonaws.auth.BasicSessionCredentials;
 import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.cloudformation.AmazonCloudFormation;
@@ -32,9 +34,16 @@ import com.amazonaws.services.identitymanagement.AmazonIdentityManagement;
 import com.amazonaws.services.identitymanagement.AmazonIdentityManagementClient;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
+import com.amazonaws.services.securitytoken.AWSSecurityTokenService;
+import com.amazonaws.services.securitytoken.AWSSecurityTokenServiceClientBuilder;
+import com.amazonaws.services.securitytoken.model.AssumeRoleRequest;
+import com.amazonaws.services.securitytoken.model.Credentials;
 import com.amazonaws.services.sns.AmazonSNS;
 import com.amazonaws.services.sns.AmazonSNSClient;
 import com.limemojito.aws.cleaner.Main;
+import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
@@ -45,15 +54,36 @@ import org.springframework.context.annotation.PropertySource;
 @PropertySource("classpath:/cleaner.properties")
 @ComponentScan(basePackageClasses = Main.class)
 public class CleanerConfig {
+    private static final Logger LOGGER = LoggerFactory.getLogger(CleanerConfig.class);
 
     @Bean
     public Regions region(@Value("${cleaner.region}") String regionName) {
         return Regions.fromName(regionName);
     }
 
+    @Bean(destroyMethod = "shutdown")
+    public AWSSecurityTokenService tokenService(Regions region) {
+        return AWSSecurityTokenServiceClientBuilder.standard()
+                                                   .withRegion(region)
+                                                   .build();
+    }
+
     @Bean
-    public AWSCredentialsProvider credentialsProvider() {
-        return new DefaultAWSCredentialsProviderChain();
+    public AWSCredentialsProvider credentialsProvider(@Value("${cleaner.role.arn}") String roleArn, AWSSecurityTokenService tokenService) {
+        if (StringUtils.isBlank(roleArn)) {
+            return new DefaultAWSCredentialsProviderChain();
+        } else {
+            LOGGER.info("Preparing credentials for Role: {}", roleArn);
+            final AssumeRoleRequest roleRequest = new AssumeRoleRequest().withRoleArn(roleArn)
+                                                                         .withRoleSessionName("aws-cleaner");
+            final Credentials credentials = tokenService.assumeRole(roleRequest)
+                                                        .getCredentials();
+            final BasicSessionCredentials sessionCredentials = new BasicSessionCredentials(
+                    credentials.getAccessKeyId(),
+                    credentials.getSecretAccessKey(),
+                    credentials.getSessionToken());
+            return new AWSStaticCredentialsProvider(sessionCredentials);
+        }
     }
 
     @Bean
@@ -64,50 +94,50 @@ public class CleanerConfig {
     }
 
     @Bean
-    public AmazonDynamoDB dynamoDBClient(AWSCredentialsProvider credentialsProvider, Regions defaultRegion) {
+    public AmazonDynamoDB dynamoDBClient(AWSCredentialsProvider credentialsProvider, Regions region) {
         return AmazonDynamoDBClient.builder()
                                    .withCredentials(credentialsProvider)
-                                   .withRegion(defaultRegion)
+                                   .withRegion(region)
                                    .build();
     }
 
     @Bean
-    public AWSElasticBeanstalk ebClient(AWSCredentialsProvider credentialsProvider, Regions defaultRegion) {
+    public AWSElasticBeanstalk ebClient(AWSCredentialsProvider credentialsProvider, Regions region) {
         return AWSElasticBeanstalkClient.builder()
                                         .withCredentials(credentialsProvider)
-                                        .withRegion(defaultRegion)
+                                        .withRegion(region)
                                         .build();
     }
 
     @Bean
-    public AmazonS3 s3Client(AWSCredentialsProvider credentialsProvider, Regions defaultRegion) {
+    public AmazonS3 s3Client(AWSCredentialsProvider credentialsProvider, Regions region) {
         return AmazonS3Client.builder()
                              .withCredentials(credentialsProvider)
-                             .withRegion(defaultRegion)
+                             .withRegion(region)
                              .build();
     }
 
     @Bean
-    public AmazonSNS snsClient(AWSCredentialsProvider credentialsProvider, Regions defaultRegion) {
+    public AmazonSNS snsClient(AWSCredentialsProvider credentialsProvider, Regions region) {
         return AmazonSNSClient.builder()
                               .withCredentials(credentialsProvider)
-                              .withRegion(defaultRegion)
+                              .withRegion(region)
                               .build();
     }
 
     @Bean
-    public AmazonElastiCache elastiCacheClient(AWSCredentialsProvider credentialsProvider, Regions defaultRegion) {
+    public AmazonElastiCache elastiCacheClient(AWSCredentialsProvider credentialsProvider, Regions region) {
         return AmazonElastiCacheClient.builder()
                                       .withCredentials(credentialsProvider)
-                                      .withRegion(defaultRegion)
+                                      .withRegion(region)
                                       .build();
     }
 
     @Bean
-    public AmazonCloudFormation cloudFormationClient(AWSCredentialsProvider credentialsProvider, Regions defaultRegion) {
+    public AmazonCloudFormation cloudFormationClient(AWSCredentialsProvider credentialsProvider, Regions region) {
         return AmazonCloudFormationClient.builder()
                                          .withCredentials(credentialsProvider)
-                                         .withRegion(defaultRegion)
+                                         .withRegion(region)
                                          .build();
     }
 }
