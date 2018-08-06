@@ -33,13 +33,11 @@ import java.util.List;
 public class Main {
     private static final Logger LOGGER = LoggerFactory.getLogger(Main.class);
     private final List<ResourceCleaner> resourceCleaners;
-    private final Regions region;
 
     @Autowired
     public Main(List<ResourceCleaner> resourceCleaners, Regions region) {
         LOGGER.info("Performing clean in region {} using {} cleaners", region, resourceCleaners.size());
         this.resourceCleaners = resourceCleaners;
-        this.region = region;
     }
 
     public static void main(String... args) {
