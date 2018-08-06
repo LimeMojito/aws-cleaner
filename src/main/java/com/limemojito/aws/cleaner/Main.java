@@ -45,9 +45,12 @@ public class Main {
     public static void main(String... args) {
         if (args.length == 0) {
             LOGGER.info("\n\nUsage: java -D.... -jar cleaner.jar --commit"
-                                + "\n\t-Dcleaner.region=<region> to override AWS region"
-                                + "\n\t-Dcleaner.cloudformation.whitelist=<comma,separated,stack,name,prefixes to keep named stacks"
-                                + "\n\t --commit to commit changes"
+                                + "\n\t-Dcleaner.region=<region> to override AWS region."
+                                + "\n\t-Dcleaner.cloudformation.whitelist=<comma,separated,stack,name,prefixes> to keep named stacks."
+                                + "\n\t-Dcleaner.role.arn=<roleArn> role to assume to access AWS."
+                                + "\n\t-Dcleaner.mfa.arn=<mfaArn> device to use with Multi Factor Authentication (prompts for code)."
+                                + "\n"
+                                + "\n\t --commit to commit changes."
                                 + "\n\n");
         }
         boolean commit = Arrays.asList(args).contains("--commit");

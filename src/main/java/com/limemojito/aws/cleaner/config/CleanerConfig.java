@@ -41,7 +41,6 @@ import com.amazonaws.services.securitytoken.model.Credentials;
 import com.amazonaws.services.sns.AmazonSNS;
 import com.amazonaws.services.sns.AmazonSNSClient;
 import com.limemojito.aws.cleaner.Main;
-import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -50,11 +49,16 @@ import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.PropertySource;
 
+import java.util.Scanner;
+
+import static org.apache.commons.lang3.StringUtils.isBlank;
+
 @Configuration
 @PropertySource("classpath:/cleaner.properties")
 @ComponentScan(basePackageClasses = Main.class)
 public class CleanerConfig {
     private static final Logger LOGGER = LoggerFactory.getLogger(CleanerConfig.class);
+    public static final int TEN_MINUTES = 600;
 
     @Bean
     public Regions region(@Value("${cleaner.region}") String regionName) {
@@ -69,13 +73,30 @@ public class CleanerConfig {
     }
 
     @Bean
-    public AWSCredentialsProvider credentialsProvider(@Value("${cleaner.role.arn}") String roleArn, AWSSecurityTokenService tokenService) {
-        if (StringUtils.isBlank(roleArn)) {
-            return new DefaultAWSCredentialsProviderChain();
-        } else {
+    public String mfaCode(@Value("${cleaner.mfa.arn}") String mfaArn) {
+        if (!isBlank(mfaArn)) {
+            try (Scanner scanner = new Scanner(System.in)) {
+                System.out.print("Enter MFA code: ");
+                return scanner.next();
+            }
+        }
+        return "";
+    }
+
+    @Bean
+    public AWSCredentialsProvider credentialsProvider(@Value("${cleaner.role.arn}") String roleArn,
+                                                      @Value("${cleaner.mfa.arn}") String mfaArn,
+                                                      AWSSecurityTokenService tokenService,
+                                                      String mfaCode) {
+        if (!isBlank(roleArn)) {
             LOGGER.info("Preparing credentials for Role: {}", roleArn);
             final AssumeRoleRequest roleRequest = new AssumeRoleRequest().withRoleArn(roleArn)
                                                                          .withRoleSessionName("aws-cleaner");
+            if (!isBlank(mfaArn)) {
+                LOGGER.info("Using MFA code with {}", mfaArn);
+                roleRequest.withSerialNumber(mfaArn);
+                roleRequest.withTokenCode(mfaCode);
+            }
             final Credentials credentials = tokenService.assumeRole(roleRequest)
                                                         .getCredentials();
             final BasicSessionCredentials sessionCredentials = new BasicSessionCredentials(
@@ -83,6 +104,8 @@ public class CleanerConfig {
                     credentials.getSecretAccessKey(),
                     credentials.getSessionToken());
             return new AWSStaticCredentialsProvider(sessionCredentials);
+        } else {
+            return new DefaultAWSCredentialsProviderChain();
         }
     }
 
