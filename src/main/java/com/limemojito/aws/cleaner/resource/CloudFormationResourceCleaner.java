@@ -18,7 +18,10 @@
 package com.limemojito.aws.cleaner.resource;
 
 import com.amazonaws.services.cloudformation.AmazonCloudFormation;
-import com.amazonaws.services.cloudformation.model.*;
+import com.amazonaws.services.cloudformation.model.AmazonCloudFormationException;
+import com.amazonaws.services.cloudformation.model.DeleteStackRequest;
+import com.amazonaws.services.cloudformation.model.ListStacksRequest;
+import com.amazonaws.services.cloudformation.model.StackSummary;
 import com.limemojito.aws.cleaner.ResourceCleaner;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -33,7 +36,6 @@ import java.util.Collection;
 import java.util.List;
 
 import static com.amazonaws.services.cloudformation.model.StackStatus.*;
-import static java.lang.String.format;
 import static java.util.stream.Collectors.toList;
 import static org.apache.commons.lang3.StringUtils.split;
 import static org.springframework.core.Ordered.HIGHEST_PRECEDENCE;
@@ -42,8 +44,6 @@ import static org.springframework.core.Ordered.HIGHEST_PRECEDENCE;
 @Service
 public class CloudFormationResourceCleaner implements ResourceCleaner {
     private static final Logger LOGGER = LoggerFactory.getLogger(CloudFormationResourceCleaner.class);
-    private static final String DELETE_COMPLETE = "DELETE_COMPLETE";
-    private static final long STATUS_DELAY = 5_000L;
     private final AmazonCloudFormation client;
     private final Collection<String> permanentStacks;
     private AmazonCloudFormationException deleteError;
@@ -164,42 +164,11 @@ public class CloudFormationResourceCleaner implements ResourceCleaner {
         LOGGER.info("Deleting stack {} with current status {}", stackName, stack.getStackStatus());
         try {
             client.deleteStack(new DeleteStackRequest().withStackName(stackName));
-            waitForDeletion(stackName);
         } catch (AmazonCloudFormationException e) {
             if (!e.getMessage().contains("not exist")) {
                 throw e;
             }
         }
         LOGGER.debug("Deleted stack");
-    }
-
-    private void waitForDeletion(String stackName) {
-        String stackStatus;
-        do {
-            waitForStackAction();
-            stackStatus = fetchDeleteStatus(stackName);
-        } while (stackStatus.equals("DELETE_IN_PROGRESS"));
-        if (!DELETE_COMPLETE.equals(stackStatus)) {
-            throw new RuntimeException(format("Could not delete stack %s status is %s", stackName, stackStatus));
-        }
-    }
-
-    private String fetchDeleteStatus(String stackName) {
-        String stackStatus;
-        final DescribeStacksResult describeStacksResult = client.describeStacks(new DescribeStacksRequest().withStackName(stackName));
-        if (!describeStacksResult.getStacks().isEmpty()) {
-            stackStatus = describeStacksResult.getStacks().get(0).getStackStatus();
-        } else {
-            stackStatus = DELETE_COMPLETE;
-        }
-        return stackStatus;
-    }
-
-    private void waitForStackAction() {
-        try {
-            Thread.sleep(STATUS_DELAY);
-        } catch (InterruptedException e) {
-            LOGGER.warn("Interrupted");
-        }
     }
 }
