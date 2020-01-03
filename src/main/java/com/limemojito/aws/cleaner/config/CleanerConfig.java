@@ -22,6 +22,8 @@ import com.amazonaws.auth.AWSStaticCredentialsProvider;
 import com.amazonaws.auth.BasicSessionCredentials;
 import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
 import com.amazonaws.regions.Regions;
+import com.amazonaws.services.certificatemanager.AWSCertificateManager;
+import com.amazonaws.services.certificatemanager.AWSCertificateManagerClientBuilder;
 import com.amazonaws.services.cloudformation.AmazonCloudFormation;
 import com.amazonaws.services.cloudformation.AmazonCloudFormationClient;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
@@ -162,5 +164,12 @@ public class CleanerConfig {
                                          .withCredentials(credentialsProvider)
                                          .withRegion(region)
                                          .build();
+    }
+
+    @Bean
+    public AWSCertificateManager certificateManager(AWSCredentialsProvider credentialsProvider, Regions region) {
+        return AWSCertificateManagerClientBuilder.standard()
+                                                 .withCredentials(credentialsProvider)
+                                                 .withRegion(region).build();
     }
 }

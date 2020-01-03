@@ -28,6 +28,8 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static com.limemojito.aws.cleaner.resource.Throttle.performWithThrottle;
+
 @Service
 public class SNSResourceCleaner extends PhysicalResourceCleaner {
     private static final Logger LOGGER = LoggerFactory.getLogger(SNSResourceCleaner.class);
@@ -56,7 +58,7 @@ public class SNSResourceCleaner extends PhysicalResourceCleaner {
     }
 
     private void unsubscribe(String subArn) {
-        Throttle.performWithThrottle(() -> {
+        performWithThrottle(() -> {
             LOGGER.info("Unsubscribe {}", subArn);
             client.unsubscribe(subArn);
         });

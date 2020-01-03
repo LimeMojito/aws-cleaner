@@ -15,7 +15,8 @@
   ~    limitations under the License.
   ~
   -->
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.limemojito.oss.aws</groupId>
@@ -27,21 +28,21 @@
         <groupId>com.limemojito.oss.standards</groupId>
         <artifactId>java-development</artifactId>
         <version>1.0.1</version>
-        <relativePath />
+        <relativePath/>
     </parent>
 
     <properties>
         <bitbucket.url>https://bitbucket.org/limemojito/aws-cleaner</bitbucket.url>
         <git.url>git@bitbucket.org:limemojito/aws-cleaner.git</git.url>
 
-        <version.aws.java.sdk>1.11.269</version.aws.java.sdk>
+        <version.aws.java.sdk>1.11.699</version.aws.java.sdk>
         <coverage.exclude.pattern.1>**Main</coverage.exclude.pattern.1>
         <coverage.exclude.pattern.2>**resource*</coverage.exclude.pattern.2>
     </properties>
 
     <name>AWS Cleaner</name>
     <description>
-        Eats an AWS account.  You can specify whitelist for cloudformation stacks, and resources that are
+        Eats an AWS account. You can specify whitelist for cloudformation stacks, and resources that are
         in a cloudformation stack will not be destroyed.
     </description>
     <url>${bitbucket.url}</url>
@@ -117,6 +118,18 @@
                 <artifactId>commons-logging</artifactId>
                 <version>1.2</version>
             </dependency>
+            <dependency>
+                <groupId>com.amazonaws</groupId>
+                <artifactId>aws-java-sdk-bom</artifactId>
+                <version>${version.aws.java.sdk}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.httpcomponents</groupId>
+                <artifactId>httpclient</artifactId>
+                <version>4.5.9</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 
@@ -144,37 +157,34 @@
         <dependency>
             <groupId>com.amazonaws</groupId>
             <artifactId>aws-java-sdk-iam</artifactId>
-            <version>${version.aws.java.sdk}</version>
         </dependency>
         <dependency>
             <groupId>com.amazonaws</groupId>
             <artifactId>aws-java-sdk-sts</artifactId>
-            <version>${version.aws.java.sdk}</version>
         </dependency>
         <dependency>
             <groupId>com.amazonaws</groupId>
             <artifactId>aws-java-sdk-cloudformation</artifactId>
-            <version>${version.aws.java.sdk}</version>
         </dependency>
         <dependency>
             <groupId>com.amazonaws</groupId>
             <artifactId>aws-java-sdk-dynamodb</artifactId>
-            <version>${version.aws.java.sdk}</version>
         </dependency>
         <dependency>
             <groupId>com.amazonaws</groupId>
             <artifactId>aws-java-sdk-elasticbeanstalk</artifactId>
-            <version>${version.aws.java.sdk}</version>
         </dependency>
         <dependency>
             <groupId>com.amazonaws</groupId>
             <artifactId>aws-java-sdk-sns</artifactId>
-            <version>${version.aws.java.sdk}</version>
         </dependency>
         <dependency>
             <groupId>com.amazonaws</groupId>
             <artifactId>aws-java-sdk-elasticache</artifactId>
-            <version>${version.aws.java.sdk}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.amazonaws</groupId>
+            <artifactId>aws-java-sdk-acm</artifactId>
         </dependency>
     </dependencies>
 </project>
