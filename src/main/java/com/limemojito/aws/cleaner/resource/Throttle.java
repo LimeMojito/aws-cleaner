@@ -44,6 +44,29 @@ public class Throttle {
         }
     }
 
+    @SuppressWarnings("unchecked")
+    static <T> T performRequestWithThrottle(AwsRequest action) {
+        try {
+            return (T) action.performRequest();
+        } catch (AmazonServiceException e) {
+            if ("Throttling".equals(e.getErrorCode())) {
+                LOGGER.warn("Throttled API calls detected, backoff {} seconds", BACKOFF_SECONDS);
+                try {
+                    Thread.sleep(BACKOFF_SECONDS * SECONDS_TO_MILLIS);
+                } catch (InterruptedException e1) {
+                    LOGGER.warn("Interrupted");
+                }
+                return (T) action.performRequest();
+            } else {
+                throw e;
+            }
+        }
+    }
+
+    interface AwsRequest {
+        Object performRequest();
+    }
+
     interface AwsAction {
         void performAction();
     }
