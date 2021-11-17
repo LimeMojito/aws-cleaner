@@ -45,7 +45,6 @@ public class CloudFormationResourceCleaner implements ResourceCleaner {
     private final Collection<String> permanentStacks;
     private final int maxDeleteWaitSeconds;
     private boolean commit;
-    private boolean deleteRetry;
 
     @Autowired
     public CloudFormationResourceCleaner(AmazonCloudFormation client,
@@ -217,8 +216,8 @@ public class CloudFormationResourceCleaner implements ResourceCleaner {
         }
     }
 
-    private boolean waitForDeleteComplete(StackSummary stack) {
-        return waitFor(maxDeleteWaitSeconds, () -> isStackDeleteCompleted(stack.getStackName()));
+    private void waitForDeleteComplete(StackSummary stack) {
+        waitFor(maxDeleteWaitSeconds, () -> isStackDeleteCompleted(stack.getStackName()));
     }
 
     private void deleteAndContinue(StackSummary stack) {
@@ -258,7 +257,6 @@ public class CloudFormationResourceCleaner implements ResourceCleaner {
     }
 
     private void deleteStack(StackSummary stack) {
-        this.deleteRetry = false;
         final String stackName = stack.getStackName();
         log.info("Deleting stack {} with current status {}", stackName, stack.getStackStatus());
         performDelete(stackName);
@@ -267,26 +265,15 @@ public class CloudFormationResourceCleaner implements ResourceCleaner {
     private boolean isStackDeleteCompleted(String stackName) {
         log.debug("Checking stack {} for delete completed", stackName);
         final Optional<StackStatus> status = requestStackStatus(stackName);
-        if (status.isPresent()) {
-            if (status.get() == DELETE_FAILED) {
-                performOneDeleteRetryOrThrow(stackName);
-            }
+        if (status.isPresent() && status.get() == DELETE_FAILED) {
+            log.warn("Delete failure detected on {} attempting retry", stackName);
+            performDelete(stackName);
         }
         final boolean deleted = status.isEmpty() || DELETE_COMPLETE == status.get();
         if (deleted) {
             log.info("Stack {} is deleted", stackName);
         }
         return deleted;
-    }
-
-    private void performOneDeleteRetryOrThrow(String stackName) {
-        if (!deleteRetry) {
-            log.warn("Delete failure detected on {} attempting 1 retry", stackName);
-            this.deleteRetry = true;
-            performDelete(stackName);
-        } else {
-            throw new IllegalStateException("Could not delete stack " + stackName);
-        }
     }
 
     private Optional<StackStatus> requestStackStatus(String stackName) {
