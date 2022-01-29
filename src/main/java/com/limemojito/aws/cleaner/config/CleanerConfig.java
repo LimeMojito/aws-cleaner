@@ -42,6 +42,8 @@ import com.amazonaws.services.securitytoken.model.AssumeRoleRequest;
 import com.amazonaws.services.securitytoken.model.Credentials;
 import com.amazonaws.services.sns.AmazonSNS;
 import com.amazonaws.services.sns.AmazonSNSClient;
+import com.amazonaws.services.sqs.AmazonSQS;
+import com.amazonaws.services.sqs.AmazonSQSClient;
 import com.limemojito.aws.cleaner.Main;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -145,6 +147,14 @@ public class CleanerConfig {
     @Bean
     public AmazonSNS snsClient(AWSCredentialsProvider credentialsProvider, Regions region) {
         return AmazonSNSClient.builder()
+                              .withCredentials(credentialsProvider)
+                              .withRegion(region)
+                              .build();
+    }
+
+    @Bean
+    public AmazonSQS sqsClient(AWSCredentialsProvider credentialsProvider, Regions region) {
+        return AmazonSQSClient.builder()
                               .withCredentials(credentialsProvider)
                               .withRegion(region)
                               .build();
