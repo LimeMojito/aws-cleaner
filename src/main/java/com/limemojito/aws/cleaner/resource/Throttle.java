@@ -18,26 +18,34 @@
 package com.limemojito.aws.cleaner.resource;
 
 import com.amazonaws.AmazonServiceException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 
+import java.time.Duration;
+
+import static java.lang.String.format;
+
+@Slf4j
 public class Throttle {
-    private static final Logger LOGGER = LoggerFactory.getLogger(Throttle.class);
     private static final int BACKOFF_SECONDS = 2;
-    private static final long SECONDS_TO_MILLIS = 1_000L;
+    private static final int MAX_ATTEMPTS = 7;
 
     static void performWithThrottle(AwsAction action) {
+        performWithThrottle(action, 1);
+    }
+
+    static <T> T performRequestWithThrottle(AwsRequest request) {
+        return performRequestWithThrottle(request, 1);
+    }
+
+
+    private static void performWithThrottle(AwsAction action, int attemptCount) {
         try {
+            giveUp(attemptCount);
             action.performAction();
         } catch (AmazonServiceException e) {
-            if ("Throttling".equals(e.getErrorCode())) {
-                LOGGER.warn("Throttled API calls detected, backoff {} seconds", BACKOFF_SECONDS);
-                try {
-                    Thread.sleep(BACKOFF_SECONDS * SECONDS_TO_MILLIS);
-                } catch (InterruptedException e1) {
-                    LOGGER.warn("Interrupted");
-                }
-                action.performAction();
+            if (isThrottle(e)) {
+                waitForAttempt(attemptCount);
+                performWithThrottle(action, ++attemptCount);
             } else {
                 throw e;
             }
@@ -45,21 +53,37 @@ public class Throttle {
     }
 
     @SuppressWarnings("unchecked")
-    static <T> T performRequestWithThrottle(AwsRequest action) {
+    private static <T> T performRequestWithThrottle(AwsRequest request, int attemptCount) {
         try {
-            return (T) action.performRequest();
+            giveUp(attemptCount);
+            return (T) request.performRequest();
         } catch (AmazonServiceException e) {
-            if ("Throttling".equals(e.getErrorCode())) {
-                LOGGER.warn("Throttled API calls detected, backoff {} seconds", BACKOFF_SECONDS);
-                try {
-                    Thread.sleep(BACKOFF_SECONDS * SECONDS_TO_MILLIS);
-                } catch (InterruptedException e1) {
-                    LOGGER.warn("Interrupted");
-                }
-                return (T) action.performRequest();
+            if (isThrottle(e)) {
+                waitForAttempt(attemptCount);
+                return performRequestWithThrottle(request, ++attemptCount);
             } else {
                 throw e;
             }
+        }
+    }
+
+    private static void giveUp(int attemptCount) {
+        if (attemptCount > MAX_ATTEMPTS) {
+            throw new IllegalStateException(format("Timeout AWS operation after %d attempts", MAX_ATTEMPTS));
+        }
+    }
+
+    private static boolean isThrottle(AmazonServiceException e) {
+        return "Throttling".equals(e.getErrorCode());
+    }
+
+    private static void waitForAttempt(int attemptCount) {
+        try {
+            final int retrySeconds = attemptCount * BACKOFF_SECONDS;
+            log.warn("Throttled API calls detected, backoff {} seconds", retrySeconds);
+            Thread.sleep(Duration.ofSeconds(retrySeconds).toMillis());
+        } catch (InterruptedException e1) {
+            log.warn("Interrupted");
         }
     }
 
