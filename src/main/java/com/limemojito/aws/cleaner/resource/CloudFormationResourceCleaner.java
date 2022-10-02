@@ -18,8 +18,19 @@
 package com.limemojito.aws.cleaner.resource;
 
 import com.amazonaws.services.cloudformation.AmazonCloudFormation;
+import com.amazonaws.services.cloudformation.model.AmazonCloudFormationException;
+import com.amazonaws.services.cloudformation.model.DeleteStackRequest;
+import com.amazonaws.services.cloudformation.model.DescribeStacksRequest;
+import com.amazonaws.services.cloudformation.model.DescribeStacksResult;
+import com.amazonaws.services.cloudformation.model.Export;
+import com.amazonaws.services.cloudformation.model.ListExportsRequest;
+import com.amazonaws.services.cloudformation.model.ListExportsResult;
+import com.amazonaws.services.cloudformation.model.ListImportsRequest;
+import com.amazonaws.services.cloudformation.model.ListImportsResult;
+import com.amazonaws.services.cloudformation.model.ListStacksRequest;
 import com.amazonaws.services.cloudformation.model.Stack;
-import com.amazonaws.services.cloudformation.model.*;
+import com.amazonaws.services.cloudformation.model.StackStatus;
+import com.amazonaws.services.cloudformation.model.StackSummary;
 import com.limemojito.aws.cleaner.ResourceCleaner;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -28,11 +39,20 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Service;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
-import static com.amazonaws.services.cloudformation.model.StackStatus.*;
+import static com.amazonaws.services.cloudformation.model.StackStatus.DELETE_COMPLETE;
+import static com.amazonaws.services.cloudformation.model.StackStatus.DELETE_FAILED;
 import static com.limemojito.aws.cleaner.resource.Throttle.performRequestWithThrottle;
 import static com.limemojito.aws.cleaner.resource.WaitFor.waitFor;
+import static java.lang.String.format;
 import static java.util.stream.Collectors.toList;
 import static org.apache.commons.lang3.StringUtils.split;
 import static org.springframework.core.Ordered.HIGHEST_PRECEDENCE;
@@ -135,19 +155,7 @@ public class CloudFormationResourceCleaner implements ResourceCleaner {
 
     private List<StackSummary> retrieveStacksToDie() {
         log.info("Requesting stacks");
-        final ListStacksRequest request = new ListStacksRequest().withStackStatusFilters(CREATE_COMPLETE,
-                                                                                         CREATE_FAILED,
-                                                                                         CREATE_IN_PROGRESS,
-                                                                                         ROLLBACK_COMPLETE,
-                                                                                         ROLLBACK_FAILED,
-                                                                                         UPDATE_COMPLETE,
-                                                                                         UPDATE_COMPLETE_CLEANUP_IN_PROGRESS,
-                                                                                         UPDATE_IN_PROGRESS,
-                                                                                         UPDATE_ROLLBACK_COMPLETE,
-                                                                                         UPDATE_ROLLBACK_COMPLETE_CLEANUP_IN_PROGRESS,
-                                                                                         UPDATE_ROLLBACK_FAILED,
-                                                                                         UPDATE_ROLLBACK_IN_PROGRESS,
-                                                                                         DELETE_FAILED);
+        final ListStacksRequest request = new ListStacksRequest();
         final List<StackSummary> stacks = performRequestWithThrottle(() -> client.listStacks(request).getStackSummaries());
         log.debug("{} stacks found", stacks.size());
         final List<StackSummary> killList = stacks.stream()
@@ -162,7 +170,7 @@ public class CloudFormationResourceCleaner implements ResourceCleaner {
         final Map<String, List<String>> stackToExport = new HashMap<>();
         String nextToken = null;
         do {
-            log.trace("Retrieving cloudforation exports");
+            log.trace("Retrieving CloudFormation exports");
             final ListExportsRequest listExportsRequest = new ListExportsRequest().withNextToken(nextToken);
             final ListExportsResult listExportsResult = performRequestWithThrottle(() -> client.listExports(listExportsRequest));
             final List<Export> cfmExports = listExportsResult.getExports();
@@ -179,7 +187,7 @@ public class CloudFormationResourceCleaner implements ResourceCleaner {
     }
 
     private boolean isKillStack(StackSummary summary) {
-        final String stackStatus = summary.getStackStatus();
+        final StackStatus stackStatus = StackStatus.valueOf(summary.getStackStatus());
         final boolean statusOkToRemove = canBeRemoved(stackStatus);
         if (statusOkToRemove) {
             final String stackName = summary.getStackName();
@@ -188,6 +196,10 @@ public class CloudFormationResourceCleaner implements ResourceCleaner {
                 log.info("Preserving stack named " + stackName);
             }
             return killStack;
+        } else {
+            if (stackStatus != DELETE_COMPLETE) {
+                throw new AmazonCloudFormationException(format("%s can not be deleted due to status %s", summary.getStackName(), stackStatus));
+            }
         }
         return false;
     }
@@ -232,23 +244,23 @@ public class CloudFormationResourceCleaner implements ResourceCleaner {
         }
     }
 
-    private boolean canBeRemoved(String stackStatus) {
-        switch (stackStatus.toUpperCase()) {
-            case "CREATE_COMPLETE":
-            case "CREATE_IN_PROGRESS":
-            case "CREATE_FAILED":
+    private boolean canBeRemoved(StackStatus status) {
+        switch (status) {
+            case CREATE_COMPLETE:
+            case CREATE_IN_PROGRESS:
+            case CREATE_FAILED:
+            case DELETE_FAILED:
+            case REVIEW_IN_PROGRESS:
 
-            case "REVIEW_IN_PROGRESS":
+            case ROLLBACK_FAILED:
 
-            case "ROLLBACK_FAILED":
-
-            case "UPDATE_COMPLETE":
-            case "UPDATE_COMPLETE_CLEANUP_IN_PROGRESS":
-            case "UPDATE_IN_PROGRESS":
-            case "UPDATE_ROLLBACK_COMPLETE":
-            case "UPDATE_ROLLBACK_COMPLETE_CLEANUP_IN_PROGRESS":
-            case "UPDATE_ROLLBACK_FAILED":
-            case "UPDATE_ROLLBACK_IN_PROGRESS":
+            case UPDATE_COMPLETE:
+            case UPDATE_COMPLETE_CLEANUP_IN_PROGRESS:
+            case UPDATE_IN_PROGRESS:
+            case UPDATE_ROLLBACK_COMPLETE:
+            case UPDATE_ROLLBACK_COMPLETE_CLEANUP_IN_PROGRESS:
+            case UPDATE_ROLLBACK_FAILED:
+            case UPDATE_ROLLBACK_IN_PROGRESS:
                 return true;
 
             default:
