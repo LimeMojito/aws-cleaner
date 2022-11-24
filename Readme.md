@@ -40,6 +40,25 @@ java -D.... -jar aws-cleaner-5.2.4.jar
 
 * Java 11
 * Access to aws account with appropriate privileges to destroy resources (this may be by assume role).
+                
+## Binaries
+
+### curl
+```
+curl -O https://repo1.maven.org/maven2/com/limemojito/oss/aws/aws-cleaner/5.2.4/aws-cleaner-5.2.4.jar
+```
+
+
+### Maven dependency
+
+```
+<dependency>
+  <groupId>com.limemojito.oss.aws</groupId>
+  <artifactId>aws-cleaner</artifactId>
+  <version>5.2.4</version>
+</dependency>
+```
+
 
 ## Change log
 
