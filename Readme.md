@@ -26,14 +26,14 @@ Supports a white list on commandline for stacks to keep.
 Framework for adding your own cleaners as spring beans.
           
 ## Usage:
+Dry run by default.  Add --commit after the -jar To commit changes
+
 ```
 java -D.... -jar aws-cleaner-5.2.4.jar 
 -Dcleaner.region=<region> to override AWS region.
 -Dcleaner.cloudformation.whitelist=<comma,separated,stack,name,prefixes> to keep named stacks.
 -Dcleaner.role.arn=<roleArn> role to assume to access AWS.
 -Dcleaner.mfa.arn=<mfaArn> device to use with Multi Factor Authentication (prompts for code).
-
---commit To commit changes
 ```
 
 ## Minimum Requirements
