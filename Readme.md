@@ -15,11 +15,13 @@ Supports a white list on commandline for stacks to keep.
 ## Destroys:
 
 * Cloudformation (in reverse dependency order by export)
-* SNS
-* SQS
-* S3
-* Dynamodb
-* Elasticache
+* "Orphan" resources that do not exist in a cloudformation stack:
+  * SNS
+  * SQS
+  * S3
+  * Dynamodb
+  * Elasticache
+  * Elastic Beanstalk Applications
 
 Framework for adding your own cleaners as spring beans.
           
