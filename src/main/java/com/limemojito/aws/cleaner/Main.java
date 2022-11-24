@@ -42,7 +42,7 @@ public class Main {
 
     public static void main(String... args) {
         if (args.length == 0) {
-            LOGGER.info("\n\nUsage: java -D.... -jar cleaner.jar --commit"
+            LOGGER.info("\n\nUsage: java -D.... -jar cleaner.jar"
                                 + "\n\t-Dcleaner.region=<region> to override AWS region."
                                 + "\n\t-Dcleaner.cloudformation.whitelist=<comma,separated,stack,name,prefixes> to keep named stacks."
                                 + "\n\t-Dcleaner.role.arn=<roleArn> role to assume to access AWS."
