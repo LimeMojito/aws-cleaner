@@ -15,11 +15,13 @@ Supports a white list on commandline for stacks to keep.
 ## Destroys:
 
 * Cloudformation (in reverse dependency order by export)
-* SNS
-* SQS
-* S3
-* Dynamodb
-* Elasticache
+* "Orphan" resources that do not exist in a cloudformation stack:
+  * SNS
+  * SQS
+  * S3
+  * Dynamodb
+  * Elasticache
+  * Elastic Beanstalk Applications
 
 Framework for adding your own cleaners as spring beans.
           
@@ -41,7 +43,7 @@ java -D.... -jar aws-cleaner-5.2.4.jar
 
 ## Change log
 
-### 5.2
+### 5.2 (2022)
 
 #### 5.2.4
 
@@ -66,7 +68,7 @@ java -D.... -jar aws-cleaner-5.2.4.jar
 
 ---
 
-### 5.1
+### 5.1 (2020)
 
 #### 5.1.3
 
@@ -88,7 +90,7 @@ java -D.... -jar aws-cleaner-5.2.4.jar
 
 ---    
 
-### 5.0
+### 5.0 (2020)
 
 #### 5.0.1
 
@@ -101,7 +103,7 @@ java -D.... -jar aws-cleaner-5.2.4.jar
 
 ---    
 
-### 4.0
+### 4.0 (2018)
 
 #### 4.0.2
 
@@ -115,7 +117,7 @@ java -D.... -jar aws-cleaner-5.2.4.jar
 
 ---    
 
-### 3.0
+### 3.0 (2018)
 
 #### 3.0.4
 
@@ -128,3 +130,7 @@ java -D.... -jar aws-cleaner-5.2.4.jar
 * Elastic Beanstalk clearing
 * Dynamo db table clearing
 * Resource white list filter
+
+### 2.0 - (2016)
+     
+### 1.0 - (2016)
