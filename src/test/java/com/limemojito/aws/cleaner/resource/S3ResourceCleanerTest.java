@@ -22,6 +22,8 @@ import com.amazonaws.services.s3.model.Bucket;
 import com.amazonaws.services.s3.model.DeleteObjectsRequest;
 import com.amazonaws.services.s3.model.ObjectListing;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
+import com.amazonaws.services.s3.model.S3VersionSummary;
+import com.amazonaws.services.s3.model.VersionListing;
 import com.limemojito.aws.cleaner.ResourceCleaner;
 import org.junit.Before;
 import org.junit.Rule;
@@ -79,6 +81,7 @@ public class S3ResourceCleanerTest extends AwsResourceCleanerUnitTestCase {
         when(client.listBuckets()).thenReturn(createBucketList());
         when(client.listObjects("test-local-bucket")).thenReturn(expectedFileList);
         doThrow(createsS3NotEmptyException()).doNothing().when(client).deleteBucket("test-local-bucket");
+        when(client.listVersions(any())).thenReturn(createVersionList());
 
         cleaner.clean();
 
@@ -86,6 +89,19 @@ public class S3ResourceCleanerTest extends AwsResourceCleanerUnitTestCase {
         verify(client, times(2)).deleteBucket("test-local-bucket");
         verify(client).deleteBucket("test-dev-bucket");
         verify(client).deleteBucket("test-prod-bucket");
+    }
+
+    private VersionListing createVersionList() {
+        VersionListing versionListing = new VersionListing();
+        versionListing.setVersionSummaries(List.of(createVersionSummary("bob.dat"),
+                                                   createVersionSummary("other.dat")));
+        return versionListing;
+    }
+
+    private S3VersionSummary createVersionSummary(String key) {
+        S3VersionSummary summary = new S3VersionSummary();
+        summary.setKey(key);
+        return summary;
     }
 
     private ObjectListing createFileList() {
