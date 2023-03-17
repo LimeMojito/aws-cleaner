@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Lime Mojito Pty Ltd
+ * Copyright 2011-2023 Lime Mojito Pty Ltd
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -23,7 +23,7 @@ import org.junit.Test;
 public class CleanIT {
 
     @Test
-    public void shouldCleanOk() throws Exception {
+    public void shouldCleanOk() {
         Main.main();
     }
 }

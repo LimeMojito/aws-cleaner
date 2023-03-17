@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Lime Mojito Pty Ltd
+ * Copyright 2011-2023 Lime Mojito Pty Ltd
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -17,7 +17,6 @@
 
 package com.limemojito.aws.cleaner;
 
-import com.amazonaws.regions.Regions;
 import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.Mock;
@@ -36,7 +35,7 @@ public class MainTest {
     private ResourceCleaner cleaner;
 
     @Test
-    public void shouldCallCleanEnvironment() throws Exception {
+    public void shouldCallCleanEnvironment() {
         Main main = new Main(singletonList(cleaner), US_WEST_2);
         main.cleanEnvironment();
     }

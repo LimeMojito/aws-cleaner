@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Lime Mojito Pty Ltd
+ * Copyright 2011-2023 Lime Mojito Pty Ltd
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -41,13 +41,13 @@ public class DynamoResourceCleanerTest extends AwsResourceCleanerUnitTestCase {
     private ResourceCleaner cleaner;
 
     @Before
-    public void setUp() throws Exception {
+    public void setUp() {
         cleaner = new DynamoResourceCleaner(client);
         cleaner.setCommit(true);
     }
 
     @Test
-    public void shouldCleanViaClient() throws Exception {
+    public void shouldCleanViaClient() {
         when(client.listTables()).thenReturn(expectedListTables());
 
         cleaner.clean();
@@ -59,7 +59,7 @@ public class DynamoResourceCleanerTest extends AwsResourceCleanerUnitTestCase {
     }
 
     @Test
-    public void shouldDeleteOnThrottle() throws Exception {
+    public void shouldDeleteOnThrottle() {
         when(client.listTables()).thenReturn(expectedListTables());
         when(client.deleteTable("LOCAL-TABLE")).thenThrow(createThrottleException()).thenReturn(null);
 

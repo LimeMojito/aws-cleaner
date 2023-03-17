@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Lime Mojito Pty Ltd
+ * Copyright 2011-2023 Lime Mojito Pty Ltd
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -37,7 +37,7 @@ public class WaitFor {
     }
 
     private static boolean waitForSituationOrTimeout(int maxWaitSeconds, long pollingDelayMs, SituationToBecomeTrue t) {
-        final long endTime = System.currentTimeMillis() + (1_000 * maxWaitSeconds);
+        final long endTime = System.currentTimeMillis() + (1_000L * maxWaitSeconds);
         boolean situation = checkSituation(t);
         while (!situation && endTime > System.currentTimeMillis()) {
             situation = pollWait(pollingDelayMs, t);

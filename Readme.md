@@ -1,4 +1,4 @@
-# AWS Cleaner version 5.2.4
+# AWS Cleaner version 5.2.5
 
 Note we are not responsible for any use of this application. Warranty is not expressed nor implied!  Use at your own
 risk.
@@ -29,7 +29,7 @@ Framework for adding your own cleaners as spring beans.
 Dry run by default.  Add --commit after the -jar To commit changes
 
 ```
-java -D.... -jar aws-cleaner-5.2.4.jar 
+java -D.... -jar aws-cleaner-5.2.5.jar 
 -Dcleaner.region=<region> to override AWS region.
 -Dcleaner.cloudformation.whitelist=<comma,separated,stack,name,prefixes> to keep named stacks.
 -Dcleaner.role.arn=<roleArn> role to assume to access AWS.
@@ -45,7 +45,7 @@ java -D.... -jar aws-cleaner-5.2.4.jar
 
 ### curl
 ```
-curl -O https://repo1.maven.org/maven2/com/limemojito/oss/aws/aws-cleaner/5.2.4/aws-cleaner-5.2.4.jar
+curl -O https://repo1.maven.org/maven2/com/limemojito/oss/aws/aws-cleaner/5.2.5/aws-cleaner-5.2.5.jar
 ```
 
 
@@ -55,14 +55,18 @@ curl -O https://repo1.maven.org/maven2/com/limemojito/oss/aws/aws-cleaner/5.2.4/
 <dependency>
   <groupId>com.limemojito.oss.aws</groupId>
   <artifactId>aws-cleaner</artifactId>
-  <version>5.2.4</version>
+  <version>5.2.5</version>
 </dependency>
 ```
 
 
 ## Change log
 
-### 5.2 (2022)
+### 5.2 (2022-2023)
+
+#### 5.2.5
+
+* Update s3 cleaner to include object versions.  Library updates.
 
 #### 5.2.4
 

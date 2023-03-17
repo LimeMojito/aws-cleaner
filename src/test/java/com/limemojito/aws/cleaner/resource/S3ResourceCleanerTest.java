@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Lime Mojito Pty Ltd
+ * Copyright 2011-2023 Lime Mojito Pty Ltd
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -45,13 +45,13 @@ public class S3ResourceCleanerTest extends AwsResourceCleanerUnitTestCase {
     private ResourceCleaner cleaner;
 
     @Before
-    public void setUp() throws Exception {
+    public void setUp() {
         cleaner = new S3ResourceCleaner(client);
         cleaner.setCommit(true);
     }
 
     @Test
-    public void shouldCleanLocalS3Ok() throws Exception {
+    public void shouldCleanLocalS3Ok() {
         when(client.listBuckets()).thenReturn(createBucketList());
 
         cleaner.clean();
@@ -62,7 +62,7 @@ public class S3ResourceCleanerTest extends AwsResourceCleanerUnitTestCase {
     }
 
     @Test
-    public void shouldDeleteOnThrottle() throws Exception {
+    public void shouldDeleteOnThrottle() {
         when(client.listBuckets()).thenReturn(createBucketList());
         doThrow(createThrottleException()).doNothing().when(client).deleteBucket("test-local-bucket");
 
@@ -74,7 +74,7 @@ public class S3ResourceCleanerTest extends AwsResourceCleanerUnitTestCase {
     }
 
     @Test
-    public void shouldDeleteNonEmptyBucket() throws Exception {
+    public void shouldDeleteNonEmptyBucket() {
         final ObjectListing expectedFileList = createFileList();
         when(client.listBuckets()).thenReturn(createBucketList());
         when(client.listObjects("test-local-bucket")).thenReturn(expectedFileList);

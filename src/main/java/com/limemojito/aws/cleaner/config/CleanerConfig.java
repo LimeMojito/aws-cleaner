@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Lime Mojito Pty Ltd
+ * Copyright 2011-2023 Lime Mojito Pty Ltd
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -62,7 +62,6 @@ import static org.apache.commons.lang3.StringUtils.isBlank;
 @ComponentScan(basePackageClasses = Main.class)
 public class CleanerConfig {
     private static final Logger LOGGER = LoggerFactory.getLogger(CleanerConfig.class);
-    public static final int TEN_MINUTES = 600;
 
     @Bean
     public Regions region(@Value("${cleaner.region}") String regionName) {

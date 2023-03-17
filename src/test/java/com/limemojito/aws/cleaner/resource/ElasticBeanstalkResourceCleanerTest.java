@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Lime Mojito Pty Ltd
+ * Copyright 2011-2023 Lime Mojito Pty Ltd
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -52,7 +52,7 @@ public class ElasticBeanstalkResourceCleanerTest extends AwsResourceCleanerUnitT
     }
 
     @Test
-    public void shouldCleanLocalOnly() throws Exception {
+    public void shouldCleanLocalOnly() {
         when(client.describeEnvironments()).thenReturn(createExampleEnvironments());
 
         cleaner.clean();
@@ -62,7 +62,7 @@ public class ElasticBeanstalkResourceCleanerTest extends AwsResourceCleanerUnitT
     }
 
     @Test
-    public void shouldDeleteOnThrottle() throws Exception {
+    public void shouldDeleteOnThrottle() {
         TerminateEnvironmentRequest expectedRequest = createTerminateRequest("LOCAL");
         when(client.describeEnvironments()).thenReturn(createExampleEnvironments());
         when(client.terminateEnvironment(expectedRequest)).thenThrow(createThrottleException()).thenReturn(null);
