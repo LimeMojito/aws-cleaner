@@ -62,8 +62,8 @@ public class SNSResourceCleaner extends PhysicalResourceCleaner {
 
     private void removeSqsSubscription(Subscription subscription) {
         log.debug("Checking {}", subscription.getSubscriptionArn());
-        if (getFilter().shouldDelete(subscription.getSubscriptionArn()) &&
-                "SQS".equalsIgnoreCase(subscription.getProtocol())) {
+        if (getFilter().shouldDelete(subscription.getSubscriptionArn())
+                && "SQS".equalsIgnoreCase(subscription.getProtocol())) {
             String queueArn = subscription.getEndpoint();
             final Matcher matcher = queueArnMatcher.matcher(queueArn);
             if (matcher.matches()) {
