@@ -104,6 +104,10 @@
             <groupId>com.amazonaws</groupId>
             <artifactId>aws-java-sdk-acm</artifactId>
         </dependency>
+        <dependency>
+            <groupId>com.amazonaws</groupId>
+            <artifactId>aws-java-sdk-logs</artifactId>
+        </dependency>
     </dependencies>
 
     <build>

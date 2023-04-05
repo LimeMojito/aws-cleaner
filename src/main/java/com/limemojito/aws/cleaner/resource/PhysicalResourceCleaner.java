@@ -18,6 +18,7 @@
 package com.limemojito.aws.cleaner.resource;
 
 import com.limemojito.aws.cleaner.ResourceCleaner;
+import lombok.Getter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,7 +27,9 @@ import java.util.List;
 
 public abstract class PhysicalResourceCleaner implements ResourceCleaner {
     private static final Logger LOGGER = LoggerFactory.getLogger(PhysicalResourceCleaner.class);
+    @Getter
     private PhysicalDeletionFilter filter;
+    @Getter
     private boolean commit;
 
     public PhysicalResourceCleaner() {

@@ -34,6 +34,8 @@ import com.amazonaws.services.elasticbeanstalk.AWSElasticBeanstalk;
 import com.amazonaws.services.elasticbeanstalk.AWSElasticBeanstalkClient;
 import com.amazonaws.services.identitymanagement.AmazonIdentityManagement;
 import com.amazonaws.services.identitymanagement.AmazonIdentityManagementClient;
+import com.amazonaws.services.logs.AWSLogs;
+import com.amazonaws.services.logs.AWSLogsClient;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.securitytoken.AWSSecurityTokenService;
@@ -71,8 +73,8 @@ public class CleanerConfig {
     @Bean(destroyMethod = "shutdown")
     public AWSSecurityTokenService tokenService(Regions region) {
         return AWSSecurityTokenServiceClientBuilder.standard()
-                                                   .withRegion(region)
-                                                   .build();
+                .withRegion(region)
+                .build();
     }
 
     @Bean
@@ -94,14 +96,14 @@ public class CleanerConfig {
         if (!isBlank(roleArn)) {
             LOGGER.info("Preparing credentials for Role: {}", roleArn);
             final AssumeRoleRequest roleRequest = new AssumeRoleRequest().withRoleArn(roleArn)
-                                                                         .withRoleSessionName("aws-cleaner");
+                    .withRoleSessionName("aws-cleaner");
             if (!isBlank(mfaArn)) {
                 LOGGER.info("Using MFA code with {}", mfaArn);
                 roleRequest.withSerialNumber(mfaArn);
                 roleRequest.withTokenCode(mfaCode);
             }
             final Credentials credentials = tokenService.assumeRole(roleRequest)
-                                                        .getCredentials();
+                    .getCredentials();
             final BasicSessionCredentials sessionCredentials = new BasicSessionCredentials(
                     credentials.getAccessKeyId(),
                     credentials.getSecretAccessKey(),
@@ -115,70 +117,78 @@ public class CleanerConfig {
     @Bean
     public AmazonIdentityManagement identityManagement(AWSCredentialsProvider credentialsProvider) {
         return AmazonIdentityManagementClient.builder()
-                                             .withCredentials(credentialsProvider)
-                                             .build();
+                .withCredentials(credentialsProvider)
+                .build();
     }
 
     @Bean
     public AmazonDynamoDB dynamoDBClient(AWSCredentialsProvider credentialsProvider, Regions region) {
         return AmazonDynamoDBClient.builder()
-                                   .withCredentials(credentialsProvider)
-                                   .withRegion(region)
-                                   .build();
+                .withCredentials(credentialsProvider)
+                .withRegion(region)
+                .build();
     }
 
     @Bean
     public AWSElasticBeanstalk ebClient(AWSCredentialsProvider credentialsProvider, Regions region) {
         return AWSElasticBeanstalkClient.builder()
-                                        .withCredentials(credentialsProvider)
-                                        .withRegion(region)
-                                        .build();
+                .withCredentials(credentialsProvider)
+                .withRegion(region)
+                .build();
     }
 
     @Bean
     public AmazonS3 s3Client(AWSCredentialsProvider credentialsProvider, Regions region) {
         return AmazonS3Client.builder()
-                             .withCredentials(credentialsProvider)
-                             .withRegion(region)
-                             .build();
+                .withCredentials(credentialsProvider)
+                .withRegion(region)
+                .build();
     }
 
     @Bean
     public AmazonSNS snsClient(AWSCredentialsProvider credentialsProvider, Regions region) {
         return AmazonSNSClient.builder()
-                              .withCredentials(credentialsProvider)
-                              .withRegion(region)
-                              .build();
+                .withCredentials(credentialsProvider)
+                .withRegion(region)
+                .build();
     }
 
     @Bean
     public AmazonSQS sqsClient(AWSCredentialsProvider credentialsProvider, Regions region) {
         return AmazonSQSClient.builder()
-                              .withCredentials(credentialsProvider)
-                              .withRegion(region)
-                              .build();
+                .withCredentials(credentialsProvider)
+                .withRegion(region)
+                .build();
     }
 
     @Bean
     public AmazonElastiCache elastiCacheClient(AWSCredentialsProvider credentialsProvider, Regions region) {
         return AmazonElastiCacheClient.builder()
-                                      .withCredentials(credentialsProvider)
-                                      .withRegion(region)
-                                      .build();
+                .withCredentials(credentialsProvider)
+                .withRegion(region)
+                .build();
     }
 
     @Bean
     public AmazonCloudFormation cloudFormationClient(AWSCredentialsProvider credentialsProvider, Regions region) {
         return AmazonCloudFormationClient.builder()
-                                         .withCredentials(credentialsProvider)
-                                         .withRegion(region)
-                                         .build();
+                .withCredentials(credentialsProvider)
+                .withRegion(region)
+                .build();
     }
 
     @Bean
     public AWSCertificateManager certificateManager(AWSCredentialsProvider credentialsProvider, Regions region) {
         return AWSCertificateManagerClientBuilder.standard()
-                                                 .withCredentials(credentialsProvider)
-                                                 .withRegion(region).build();
+                .withCredentials(credentialsProvider)
+                .withRegion(region).build();
+    }
+
+    @Bean
+    public AWSLogs cloudWatch(AWSCredentialsProvider credentialsProvider, Regions region) {
+        return AWSLogsClient.builder()
+                .withCredentials(credentialsProvider)
+                .withRegion(region)
+                .build();
     }
 }
