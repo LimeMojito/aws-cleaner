@@ -64,6 +64,10 @@ curl -O https://repo1.maven.org/maven2/com/limemojito/oss/aws/aws-cleaner/5.2.5/
 
 ### 5.2 (2022-2023)
 
+#### 5.2.6
+* LogGroup cleaner - removes log groups where not in cloudformation and the storage has dropped to 0b
+* SNS Cleaner - Updated to remove "dangling" SQS subscriptions when the Q no longer exists.
+
 #### 5.2.5
 
 * Update s3 cleaner to include object versions.  Library updates.
