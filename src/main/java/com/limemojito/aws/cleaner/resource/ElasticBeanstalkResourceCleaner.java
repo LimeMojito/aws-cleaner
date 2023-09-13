@@ -23,8 +23,6 @@ import com.amazonaws.services.elasticbeanstalk.model.DescribeEnvironmentsResult;
 import com.amazonaws.services.elasticbeanstalk.model.EnvironmentDescription;
 import com.amazonaws.services.elasticbeanstalk.model.TerminateEnvironmentRequest;
 import lombok.extern.slf4j.Slf4j;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -50,11 +48,12 @@ public class ElasticBeanstalkResourceCleaner extends PhysicalResourceCleaner {
             final List<EnvironmentDescription> environments = result.getEnvironments();
             log.debug("{} environments found", environments.size());
             return environments.stream()
-                               .filter(environmentDescription -> environmentDescription.getStatus().equalsIgnoreCase("Ready"))
+                               .filter(environmentDescription -> environmentDescription.getStatus()
+                                                                                       .equalsIgnoreCase("Ready"))
                                .map(EnvironmentDescription::getEnvironmentName)
                                .collect(Collectors.toList());
         } catch (SdkClientException e) {
-            log.warn("Could not communicate with elastic beanstalk: {}", e.getMessage(),e);
+            log.warn("Could not communicate with elastic beanstalk: {}", e.getMessage(), e);
             return Collections.emptyList();
         }
     }
