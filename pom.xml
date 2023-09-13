@@ -20,7 +20,7 @@
 
     <groupId>com.limemojito.oss.aws</groupId>
     <artifactId>aws-cleaner</artifactId>
-    <version>5.2.8-SNAPSHOT</version>
+    <version>5.2.8</version>
     <packaging>jar</packaging>
 
     <parent>
@@ -48,7 +48,7 @@
         <connection>${lime.scm.url}</connection>
         <developerConnection>${lime.scm.url}</developerConnection>
         <url>${bitbucket.url}</url>
-        <tag>master</tag>
+        <tag>aws-cleaner-5.2.8</tag>
     </scm>
     <issueManagement>
         <system>Bitbucket</system>
