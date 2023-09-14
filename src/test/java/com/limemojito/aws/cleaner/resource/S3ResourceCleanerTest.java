@@ -20,6 +20,7 @@ package com.limemojito.aws.cleaner.resource;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.Bucket;
 import com.amazonaws.services.s3.model.DeleteObjectsRequest;
+import com.amazonaws.services.s3.model.HeadBucketResult;
 import com.amazonaws.services.s3.model.ObjectListing;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
 import com.amazonaws.services.s3.model.S3VersionSummary;
@@ -55,6 +56,7 @@ public class S3ResourceCleanerTest extends AwsResourceCleanerUnitTestCase {
     @Test
     public void shouldCleanLocalS3Ok() {
         when(client.listBuckets()).thenReturn(createBucketList());
+        whenRegionCheckOk();
 
         cleaner.clean();
 
@@ -66,6 +68,7 @@ public class S3ResourceCleanerTest extends AwsResourceCleanerUnitTestCase {
     @Test
     public void shouldDeleteOnThrottle() {
         when(client.listBuckets()).thenReturn(createBucketList());
+        whenRegionCheckOk();
         doThrow(createThrottleException()).doNothing().when(client).deleteBucket("test-local-bucket");
 
         cleaner.clean();
@@ -79,6 +82,7 @@ public class S3ResourceCleanerTest extends AwsResourceCleanerUnitTestCase {
     public void shouldDeleteNonEmptyBucket() {
         final ObjectListing expectedFileList = createFileList();
         when(client.listBuckets()).thenReturn(createBucketList());
+        whenRegionCheckOk();
         when(client.listObjects("test-local-bucket")).thenReturn(expectedFileList);
         doThrow(createsS3NotEmptyException()).doNothing().when(client).deleteBucket("test-local-bucket");
         when(client.listVersions(any())).thenReturn(createVersionList());
@@ -91,10 +95,16 @@ public class S3ResourceCleanerTest extends AwsResourceCleanerUnitTestCase {
         verify(client).deleteBucket("test-prod-bucket");
     }
 
+    private void whenRegionCheckOk() {
+        String expectedRegion = "ap-southeast-4";
+        when(client.getRegionName()).thenReturn(expectedRegion);
+        HeadBucketResult regionMatch = new HeadBucketResult().withBucketRegion(expectedRegion);
+        when(client.headBucket(any())).thenReturn(regionMatch);
+    }
+
     private VersionListing createVersionList() {
         VersionListing versionListing = new VersionListing();
-        versionListing.setVersionSummaries(List.of(createVersionSummary("bob.dat"),
-                                                   createVersionSummary("other.dat")));
+        versionListing.setVersionSummaries(List.of(createVersionSummary("bob.dat"), createVersionSummary("other.dat")));
         return versionListing;
     }
 

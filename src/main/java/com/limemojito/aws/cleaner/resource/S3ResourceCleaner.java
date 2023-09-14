@@ -21,6 +21,7 @@ import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.AmazonS3Exception;
 import com.amazonaws.services.s3.model.Bucket;
 import com.amazonaws.services.s3.model.DeleteObjectsRequest;
+import com.amazonaws.services.s3.model.HeadBucketRequest;
 import com.amazonaws.services.s3.model.ListVersionsRequest;
 import com.amazonaws.services.s3.model.ObjectListing;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
@@ -50,12 +51,26 @@ public class S3ResourceCleaner extends PhysicalResourceCleaner {
         return client.listBuckets()
                      .stream()
                      .map(Bucket::getName)
+                     .filter(this::checkRegion)
                      .collect(Collectors.toList());
     }
 
     @Override
     protected void performDelete(String physicalId) {
         deleteBucket(physicalId);
+    }
+
+    private boolean checkRegion(String name) {
+        final String cleaningRegion = client.getRegionName();
+        try {
+            Object bucketRegion = Throttle.performRequestWithThrottle(() -> client.headBucket(new HeadBucketRequest(name))
+                                                                                  .getBucketRegion());
+            log.info("Bucket {} is in region {}, cleaning {}", name, bucketRegion, cleaningRegion);
+            return cleaningRegion.equals(bucketRegion);
+        } catch (AmazonS3Exception e) {
+            log.debug("Can not head bucket {} from region {}", name, cleaningRegion);
+            return false;
+        }
     }
 
     private void deleteBucket(String bucketName) {
