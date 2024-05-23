@@ -1,0 +1,9 @@
+name: OSS Maven Standards Release Build
+
+on:
+  workflow_dispatch
+
+jobs:
+  oss-release-workflow:
+    uses: LimeMojito/oss-maven-standards/.github/workflows/oss-release-build.yml@master
+    secrets: inherit

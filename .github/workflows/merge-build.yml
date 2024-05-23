@@ -1,0 +1,12 @@
+name: OSS Maven Standards Merge Build
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+
+jobs:
+  oss-maven-workflow:
+    uses: LimeMojito/oss-maven-standards/.github/workflows/oss-java-build.yml@master
+    secrets: inherit

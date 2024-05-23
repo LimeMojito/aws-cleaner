@@ -20,19 +20,19 @@
 
     <groupId>com.limemojito.oss.aws</groupId>
     <artifactId>aws-cleaner</artifactId>
-    <version>5.2.10-SNAPSHOT</version>
+    <version>6.0.0-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <parent>
         <groupId>com.limemojito.oss.standards</groupId>
         <artifactId>java-development</artifactId>
-        <version>2.7.9</version>
+        <version>14.0.19</version>
         <relativePath />
     </parent>
 
     <properties>
-        <bitbucket.url>https://bitbucket.org/limemojito/aws-cleaner</bitbucket.url>
-        <git.url>git@bitbucket.org:limemojito/aws-cleaner.git</git.url>
+        <github.url>https://github.com/LimeMojito/aws-cleaner</github.url>
+        <git.url>git@github.com:LimeMojito/aws-cleaner.git</git.url>
 
         <coverage.exclude.pattern.1>**Main</coverage.exclude.pattern.1>
         <coverage.exclude.pattern.2>**resource*</coverage.exclude.pattern.2>
@@ -43,16 +43,16 @@
         Eats an AWS account. You can specify whitelist for cloudformation stacks, and resources that are
         in a cloudformation stack will not be destroyed.
     </description>
-    <url>${bitbucket.url}</url>
+    <url>${github.url}</url>
     <scm>
         <connection>${lime.scm.url}</connection>
         <developerConnection>${lime.scm.url}</developerConnection>
-        <url>${bitbucket.url}</url>
+        <url>${github.url}</url>
         <tag>master</tag>
     </scm>
     <issueManagement>
-        <system>Bitbucket</system>
-        <url>${bitbucket.url}/issues</url>
+        <system>GitHub</system>
+        <url>${github.url}/issues</url>
     </issueManagement>
 
     <dependencies>
@@ -107,6 +107,13 @@
         <dependency>
             <groupId>com.amazonaws</groupId>
             <artifactId>aws-java-sdk-logs</artifactId>
+        </dependency>
+
+        <!-- Test Dependencies -->
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 
