@@ -38,7 +38,7 @@ java -D.... -jar aws-cleaner-6.0.0.jar
 
 ## Minimum Requirements
 
-* Java 11
+* Java 17 (< version 6 is 11)
 * Access to aws account with appropriate privileges to destroy resources (this may be by assume role).
                 
 ## Binaries
