@@ -57,7 +57,8 @@ public class S3ResourceCleaner extends PhysicalResourceCleaner {
      */
     @Override
     protected List<String> getPhysicalResourceIds() {
-        return client.listBuckets()
+        return client.listBuckets(new ListBucketsPaginatedRequest().withMaxBuckets(100))
+                     .getBuckets()
                      .stream()
                      .map(Bucket::getName)
                      .filter(this::checkRegion)

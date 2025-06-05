@@ -78,7 +78,7 @@ public class CleanerConfig {
      */
     @Bean
     public Regions region(@Value("${cleaner.region}") String regionName) {
-        return Regions.fromName(regionName);
+        return Regions.valueOf(regionName);
     }
 
     /**
