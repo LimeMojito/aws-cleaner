@@ -21,6 +21,7 @@ import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -36,6 +37,7 @@ import java.util.stream.Collectors;
 @Slf4j
 public class S3ResourceCleaner extends PhysicalResourceCleaner {
     private final AmazonS3 client;
+    private final int bucketMax;
 
     /**
      * Constructs a new S3ResourceCleaner.
@@ -43,9 +45,10 @@ public class S3ResourceCleaner extends PhysicalResourceCleaner {
      * @param client The AWS S3 client
      */
     @Autowired
-    public S3ResourceCleaner(AmazonS3 client) {
+    public S3ResourceCleaner(AmazonS3 client, @Value("${cleaner.bucket.max}") int maxBuckets) {
         super();
         this.client = client;
+        bucketMax = maxBuckets;
     }
 
     /**
@@ -57,7 +60,7 @@ public class S3ResourceCleaner extends PhysicalResourceCleaner {
      */
     @Override
     protected List<String> getPhysicalResourceIds() {
-        return client.listBuckets(new ListBucketsPaginatedRequest().withMaxBuckets(100))
+        return client.listBuckets(new ListBucketsPaginatedRequest().withMaxBuckets(bucketMax))
                      .getBuckets()
                      .stream()
                      .map(Bucket::getName)

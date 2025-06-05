@@ -18,13 +18,7 @@
 package com.limemojito.aws.cleaner.resource;
 
 import com.amazonaws.services.s3.AmazonS3Client;
-import com.amazonaws.services.s3.model.Bucket;
-import com.amazonaws.services.s3.model.DeleteObjectsRequest;
-import com.amazonaws.services.s3.model.HeadBucketResult;
-import com.amazonaws.services.s3.model.ObjectListing;
-import com.amazonaws.services.s3.model.S3ObjectSummary;
-import com.amazonaws.services.s3.model.S3VersionSummary;
-import com.amazonaws.services.s3.model.VersionListing;
+import com.amazonaws.services.s3.model.*;
 import com.limemojito.aws.cleaner.ResourceCleaner;
 import org.junit.Before;
 import org.junit.Rule;
@@ -49,13 +43,13 @@ public class S3ResourceCleanerTest extends AwsResourceCleanerUnitTestCase {
 
     @Before
     public void setUp() {
-        cleaner = new S3ResourceCleaner(client);
+        cleaner = new S3ResourceCleaner(client, 100);
         cleaner.setCommit(true);
     }
 
     @Test
     public void shouldCleanLocalS3Ok() {
-        when(client.listBuckets()).thenReturn(createBucketList());
+        when(client.listBuckets(any(ListBucketsPaginatedRequest.class))).thenReturn(createBucketList());
         whenRegionCheckOk();
 
         cleaner.clean();
@@ -67,7 +61,7 @@ public class S3ResourceCleanerTest extends AwsResourceCleanerUnitTestCase {
 
     @Test
     public void shouldDeleteOnThrottle() {
-        when(client.listBuckets()).thenReturn(createBucketList());
+        when(client.listBuckets(any(ListBucketsPaginatedRequest.class))).thenReturn(createBucketList());
         whenRegionCheckOk();
         doThrow(createThrottleException()).doNothing().when(client).deleteBucket("test-local-bucket");
 
@@ -81,7 +75,7 @@ public class S3ResourceCleanerTest extends AwsResourceCleanerUnitTestCase {
     @Test
     public void shouldDeleteNonEmptyBucket() {
         final ObjectListing expectedFileList = createFileList();
-        when(client.listBuckets()).thenReturn(createBucketList());
+        when(client.listBuckets(any(ListBucketsPaginatedRequest.class))).thenReturn(createBucketList());
         whenRegionCheckOk();
         when(client.listObjects("test-local-bucket")).thenReturn(expectedFileList);
         doThrow(createsS3NotEmptyException()).doNothing().when(client).deleteBucket("test-local-bucket");
@@ -128,11 +122,11 @@ public class S3ResourceCleanerTest extends AwsResourceCleanerUnitTestCase {
         return s3ObjectSummary;
     }
 
-    private List<Bucket> createBucketList() {
+    private ListBucketsPaginatedResult createBucketList() {
         List<Bucket> buckets = new LinkedList<>();
         buckets.add(new Bucket("test-local-bucket"));
         buckets.add(new Bucket("test-dev-bucket"));
         buckets.add(new Bucket("test-prod-bucket"));
-        return buckets;
+        return new ListBucketsPaginatedResult().withBuckets(buckets);
     }
 }
