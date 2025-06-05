@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2024 Lime Mojito Pty Ltd
+ * Copyright 2011-2025 Lime Mojito Pty Ltd
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -18,19 +18,8 @@
 package com.limemojito.aws.cleaner.resource;
 
 import com.amazonaws.services.cloudformation.AmazonCloudFormation;
-import com.amazonaws.services.cloudformation.model.AmazonCloudFormationException;
-import com.amazonaws.services.cloudformation.model.DeleteStackRequest;
-import com.amazonaws.services.cloudformation.model.DescribeStacksRequest;
-import com.amazonaws.services.cloudformation.model.DescribeStacksResult;
-import com.amazonaws.services.cloudformation.model.Export;
-import com.amazonaws.services.cloudformation.model.ListExportsRequest;
-import com.amazonaws.services.cloudformation.model.ListExportsResult;
-import com.amazonaws.services.cloudformation.model.ListImportsRequest;
-import com.amazonaws.services.cloudformation.model.ListImportsResult;
-import com.amazonaws.services.cloudformation.model.ListStacksRequest;
+import com.amazonaws.services.cloudformation.model.*;
 import com.amazonaws.services.cloudformation.model.Stack;
-import com.amazonaws.services.cloudformation.model.StackStatus;
-import com.amazonaws.services.cloudformation.model.StackSummary;
 import com.limemojito.aws.cleaner.ResourceCleaner;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -39,14 +28,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 import static com.amazonaws.services.cloudformation.model.StackStatus.DELETE_COMPLETE;
 import static com.amazonaws.services.cloudformation.model.StackStatus.DELETE_FAILED;
@@ -57,6 +39,12 @@ import static java.util.stream.Collectors.toList;
 import static org.apache.commons.lang3.StringUtils.split;
 import static org.springframework.core.Ordered.HIGHEST_PRECEDENCE;
 
+/**
+ * Resource cleaner for AWS CloudFormation stacks.
+ * This cleaner is executed with the highest precedence to ensure CloudFormation stacks
+ * are deleted before other resources. It handles dependencies between stacks by
+ * analyzing exports and imports, and deletes stacks in the correct order.
+ */
 @Order(HIGHEST_PRECEDENCE)
 @Service
 @Slf4j
@@ -66,6 +54,13 @@ public class CloudFormationResourceCleaner implements ResourceCleaner {
     private final int maxDeleteWaitSeconds;
     private boolean commit;
 
+    /**
+     * Constructs a new CloudFormationResourceCleaner.
+     *
+     * @param client       The AWS CloudFormation client
+     * @param whitelistCsv Comma-separated list of stack name prefixes to preserve
+     * @param seconds      Maximum time in seconds to wait for stack deletion to complete
+     */
     @Autowired
     public CloudFormationResourceCleaner(AmazonCloudFormation client,
                                          @Value("${cleaner.cloudformation.whitelist}") String whitelistCsv,
@@ -80,16 +75,34 @@ public class CloudFormationResourceCleaner implements ResourceCleaner {
         }
     }
 
+    /**
+     * {@inheritDoc}
+     * Sets whether the cleaner should actually delete CloudFormation stacks or just simulate the deletions.
+     */
     @Override
     public void setCommit(boolean commit) {
         this.commit = commit;
     }
 
+    /**
+     * {@inheritDoc}
+     * This implementation ignores the filter as CloudFormation stacks are managed differently.
+     * The decision to delete stacks is based on stack names and export dependencies.
+     */
     @Override
     public void setFilter(PhysicalDeletionFilter filter) {
         log.debug("Ignoring filter {}", filter.getClass());
     }
 
+    /**
+     * {@inheritDoc}
+     * Cleans AWS CloudFormation stacks by:
+     * 1. First identifying and deleting stacks without exports
+     * 2. Then deleting remaining stacks in dependency order (stacks with unused exports first)
+     *
+     * This approach respects the dependencies between stacks and ensures that stacks
+     * are deleted in the correct order to avoid dependency conflicts.
+     */
     @Override
     public void clean() {
         final Map<String, List<String>> stackToExport = retrieveCloudformationExportMap();
@@ -109,11 +122,13 @@ public class CloudFormationResourceCleaner implements ResourceCleaner {
         if (commit) {
             iterateRemovingStacksWithUnusedExports(stackToExport, killList);
         } else {
-            log.info("Would delete {} (in appropriate order)", killList.stream().map(StackSummary::getStackName).collect(toList()));
+            log.info("Would delete {} (in appropriate order)",
+                     killList.stream().map(StackSummary::getStackName).collect(toList()));
         }
     }
 
-    private void iterateRemovingStacksWithUnusedExports(Map<String, List<String>> stackToExport, List<StackSummary> killList) {
+    private void iterateRemovingStacksWithUnusedExports(Map<String, List<String>> stackToExport,
+                                                        List<StackSummary> killList) {
         do {
             // relies on a max build time.
             removeStacksWithExportsNotInUse(stackToExport, killList);
@@ -156,7 +171,8 @@ public class CloudFormationResourceCleaner implements ResourceCleaner {
     private List<StackSummary> retrieveStacksToDie() {
         log.info("Requesting stacks");
         final ListStacksRequest request = new ListStacksRequest();
-        final List<StackSummary> stacks = performRequestWithThrottle(() -> client.listStacks(request).getStackSummaries());
+        final List<StackSummary> stacks = performRequestWithThrottle(() -> client.listStacks(request)
+                                                                                 .getStackSummaries());
         log.debug("{} stacks found", stacks.size());
         final List<StackSummary> killList = stacks.stream()
                                                   .filter(this::isKillStack)
@@ -172,11 +188,13 @@ public class CloudFormationResourceCleaner implements ResourceCleaner {
         do {
             log.trace("Retrieving CloudFormation exports");
             final ListExportsRequest listExportsRequest = new ListExportsRequest().withNextToken(nextToken);
-            final ListExportsResult listExportsResult = performRequestWithThrottle(() -> client.listExports(listExportsRequest));
+            final ListExportsResult listExportsResult = performRequestWithThrottle(() -> client.listExports(
+                    listExportsRequest));
             final List<Export> cfmExports = listExportsResult.getExports();
             log.debug("Retrieved {} exports", cfmExports.size());
             for (Export cfmExport : cfmExports) {
-                final List<String> exports = stackToExport.computeIfAbsent(cfmExport.getExportingStackId(), (key) -> new ArrayList<>());
+                final List<String> exports = stackToExport.computeIfAbsent(cfmExport.getExportingStackId(),
+                                                                           (key) -> new ArrayList<>());
                 exports.add(cfmExport.getName());
                 stackToExport.put(cfmExport.getExportingStackId(), exports);
             }
@@ -193,12 +211,14 @@ public class CloudFormationResourceCleaner implements ResourceCleaner {
             final String stackName = summary.getStackName();
             final boolean killStack = (!isPermStackName(stackName));
             if (!killStack) {
-                log.info("Preserving stack named " + stackName);
+                log.info("Preserving stack named {}", stackName);
             }
             return killStack;
         } else {
             if (stackStatus != DELETE_COMPLETE) {
-                throw new AmazonCloudFormationException(format("%s can not be deleted due to status %s", summary.getStackName(), stackStatus));
+                throw new AmazonCloudFormationException(format("%s can not be deleted due to status %s",
+                                                               summary.getStackName(),
+                                                               stackStatus));
             }
         }
         return false;
@@ -245,27 +265,13 @@ public class CloudFormationResourceCleaner implements ResourceCleaner {
     }
 
     private boolean canBeRemoved(StackStatus status) {
-        switch (status) {
-            case CREATE_COMPLETE:
-            case CREATE_IN_PROGRESS:
-            case CREATE_FAILED:
-            case DELETE_FAILED:
-            case REVIEW_IN_PROGRESS:
-
-            case ROLLBACK_FAILED:
-
-            case UPDATE_COMPLETE:
-            case UPDATE_COMPLETE_CLEANUP_IN_PROGRESS:
-            case UPDATE_IN_PROGRESS:
-            case UPDATE_ROLLBACK_COMPLETE:
-            case UPDATE_ROLLBACK_COMPLETE_CLEANUP_IN_PROGRESS:
-            case UPDATE_ROLLBACK_FAILED:
-            case UPDATE_ROLLBACK_IN_PROGRESS:
-                return true;
-
-            default:
-                return false;
-        }
+        return switch (status) {
+            case CREATE_COMPLETE, CREATE_IN_PROGRESS, CREATE_FAILED, DELETE_FAILED, REVIEW_IN_PROGRESS, ROLLBACK_FAILED,
+                 UPDATE_COMPLETE, UPDATE_COMPLETE_CLEANUP_IN_PROGRESS, UPDATE_IN_PROGRESS, UPDATE_ROLLBACK_COMPLETE,
+                 UPDATE_ROLLBACK_COMPLETE_CLEANUP_IN_PROGRESS, UPDATE_ROLLBACK_FAILED, UPDATE_ROLLBACK_IN_PROGRESS ->
+                    true;
+            default -> false;
+        };
     }
 
     private void deleteStack(StackSummary stack) {
@@ -291,9 +297,12 @@ public class CloudFormationResourceCleaner implements ResourceCleaner {
     private Optional<StackStatus> requestStackStatus(String stackName) {
         try {
             final DescribeStacksRequest request = new DescribeStacksRequest().withStackName(stackName);
-            final DescribeStacksResult describeStacksResult = performRequestWithThrottle(() -> client.describeStacks(request));
+            final DescribeStacksResult describeStacksResult = performRequestWithThrottle(() -> client.describeStacks(
+                    request));
             final List<Stack> stacks = describeStacksResult.getStacks();
-            return stacks.isEmpty() ? Optional.empty() : Optional.of(StackStatus.fromValue(stacks.get(0).getStackStatus()));
+            return stacks.isEmpty()
+                   ? Optional.empty()
+                   : Optional.of(StackStatus.fromValue(stacks.getFirst().getStackStatus()));
         } catch (AmazonCloudFormationException e) {
             log.debug("stack not existing?", e);
             return Optional.empty();

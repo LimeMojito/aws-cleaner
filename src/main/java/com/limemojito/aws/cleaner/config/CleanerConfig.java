@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2024 Lime Mojito Pty Ltd
+ * Copyright 2011-2025 Lime Mojito Pty Ltd
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -59,17 +59,35 @@ import java.util.Scanner;
 
 import static org.apache.commons.lang3.StringUtils.isBlank;
 
+/**
+ * Spring configuration class for the AWS resource cleaner application.
+ * This class defines all the beans required for the application, including AWS clients
+ * for various services, credential providers, and region configuration.
+ */
 @Configuration
 @PropertySource("classpath:/cleaner.properties")
 @ComponentScan(basePackageClasses = Main.class)
 public class CleanerConfig {
     private static final Logger LOGGER = LoggerFactory.getLogger(CleanerConfig.class);
 
+    /**
+     * Provides the AWS region to use for all AWS clients.
+     *
+     * @param regionName The region name from configuration
+     * @return The AWS region enum value
+     */
     @Bean
     public Regions region(@Value("${cleaner.region}") String regionName) {
         return Regions.fromName(regionName);
     }
 
+    /**
+     * Creates an AWS Security Token Service client.
+     * This client is used for assuming roles and handling MFA authentication.
+     *
+     * @param region The AWS region to use
+     * @return The AWS Security Token Service client
+     */
     @Bean(destroyMethod = "shutdown")
     public AWSSecurityTokenService tokenService(Regions region) {
         return AWSSecurityTokenServiceClientBuilder.standard()
@@ -77,6 +95,12 @@ public class CleanerConfig {
                 .build();
     }
 
+    /**
+     * Prompts for and returns an MFA code if MFA is configured.
+     *
+     * @param mfaArn The ARN of the MFA device, if any
+     * @return The MFA code entered by the user, or an empty string if MFA is not configured
+     */
     @Bean
     public String mfaCode(@Value("${cleaner.mfa.arn}") String mfaArn) {
         if (!isBlank(mfaArn)) {
@@ -88,6 +112,17 @@ public class CleanerConfig {
         return "";
     }
 
+    /**
+     * Creates an AWS credentials provider that handles role assumption and MFA if configured.
+     * If a role ARN is provided, assumes that role. If an MFA ARN is also provided,
+     * uses the MFA code when assuming the role.
+     *
+     * @param roleArn The ARN of the role to assume, if any
+     * @param mfaArn The ARN of the MFA device, if any
+     * @param tokenService The AWS Security Token Service client
+     * @param mfaCode The MFA code, if MFA is configured
+     * @return An AWS credentials provider
+     */
     @Bean
     public AWSCredentialsProvider credentialsProvider(@Value("${cleaner.role.arn}") String roleArn,
                                                       @Value("${cleaner.mfa.arn}") String mfaArn,
@@ -114,6 +149,12 @@ public class CleanerConfig {
         }
     }
 
+    /**
+     * Creates an AWS Identity and Access Management (IAM) client.
+     *
+     * @param credentialsProvider The AWS credentials provider
+     * @return The AWS IAM client
+     */
     @Bean
     public AmazonIdentityManagement identityManagement(AWSCredentialsProvider credentialsProvider) {
         return AmazonIdentityManagementClient.builder()
@@ -121,6 +162,13 @@ public class CleanerConfig {
                 .build();
     }
 
+    /**
+     * Creates an AWS DynamoDB client.
+     *
+     * @param credentialsProvider The AWS credentials provider
+     * @param region The AWS region to use
+     * @return The AWS DynamoDB client
+     */
     @Bean
     public AmazonDynamoDB dynamoDBClient(AWSCredentialsProvider credentialsProvider, Regions region) {
         return AmazonDynamoDBClient.builder()
@@ -129,6 +177,13 @@ public class CleanerConfig {
                 .build();
     }
 
+    /**
+     * Creates an AWS Elastic Beanstalk client.
+     *
+     * @param credentialsProvider The AWS credentials provider
+     * @param region The AWS region to use
+     * @return The AWS Elastic Beanstalk client
+     */
     @Bean
     public AWSElasticBeanstalk ebClient(AWSCredentialsProvider credentialsProvider, Regions region) {
         return AWSElasticBeanstalkClient.builder()
@@ -137,6 +192,13 @@ public class CleanerConfig {
                 .build();
     }
 
+    /**
+     * Creates an AWS S3 client.
+     *
+     * @param credentialsProvider The AWS credentials provider
+     * @param region The AWS region to use
+     * @return The AWS S3 client
+     */
     @Bean
     public AmazonS3 s3Client(AWSCredentialsProvider credentialsProvider, Regions region) {
         return AmazonS3Client.builder()
@@ -145,6 +207,13 @@ public class CleanerConfig {
                 .build();
     }
 
+    /**
+     * Creates an AWS Simple Notification Service (SNS) client.
+     *
+     * @param credentialsProvider The AWS credentials provider
+     * @param region The AWS region to use
+     * @return The AWS SNS client
+     */
     @Bean
     public AmazonSNS snsClient(AWSCredentialsProvider credentialsProvider, Regions region) {
         return AmazonSNSClient.builder()
@@ -153,6 +222,13 @@ public class CleanerConfig {
                 .build();
     }
 
+    /**
+     * Creates an AWS Simple Queue Service (SQS) client.
+     *
+     * @param credentialsProvider The AWS credentials provider
+     * @param region The AWS region to use
+     * @return The AWS SQS client
+     */
     @Bean
     public AmazonSQS sqsClient(AWSCredentialsProvider credentialsProvider, Regions region) {
         return AmazonSQSClient.builder()
@@ -161,6 +237,13 @@ public class CleanerConfig {
                 .build();
     }
 
+    /**
+     * Creates an AWS ElastiCache client.
+     *
+     * @param credentialsProvider The AWS credentials provider
+     * @param region The AWS region to use
+     * @return The AWS ElastiCache client
+     */
     @Bean
     public AmazonElastiCache elastiCacheClient(AWSCredentialsProvider credentialsProvider, Regions region) {
         return AmazonElastiCacheClient.builder()
@@ -169,6 +252,13 @@ public class CleanerConfig {
                 .build();
     }
 
+    /**
+     * Creates an AWS CloudFormation client.
+     *
+     * @param credentialsProvider The AWS credentials provider
+     * @param region The AWS region to use
+     * @return The AWS CloudFormation client
+     */
     @Bean
     public AmazonCloudFormation cloudFormationClient(AWSCredentialsProvider credentialsProvider, Regions region) {
         return AmazonCloudFormationClient.builder()
@@ -177,6 +267,13 @@ public class CleanerConfig {
                 .build();
     }
 
+    /**
+     * Creates an AWS Certificate Manager client.
+     *
+     * @param credentialsProvider The AWS credentials provider
+     * @param region The AWS region to use
+     * @return The AWS Certificate Manager client
+     */
     @Bean
     public AWSCertificateManager certificateManager(AWSCredentialsProvider credentialsProvider, Regions region) {
         return AWSCertificateManagerClientBuilder.standard()
@@ -184,6 +281,13 @@ public class CleanerConfig {
                 .withRegion(region).build();
     }
 
+    /**
+     * Creates an AWS CloudWatch Logs client.
+     *
+     * @param credentialsProvider The AWS credentials provider
+     * @param region The AWS region to use
+     * @return The AWS CloudWatch Logs client
+     */
     @Bean
     public AWSLogs cloudWatch(AWSCredentialsProvider credentialsProvider, Regions region) {
         return AWSLogsClient.builder()

@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2024 Lime Mojito Pty Ltd
+ * Copyright 2011-2025 Lime Mojito Pty Ltd
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -29,17 +29,34 @@ import org.springframework.stereotype.Service;
 import java.util.Arrays;
 import java.util.List;
 
+/**
+ * Main entry point for the AWS resource cleaner application.
+ * This class orchestrates the cleaning process by coordinating multiple resource cleaners.
+ */
 @Service
 public class Main {
     private static final Logger LOGGER = LoggerFactory.getLogger(Main.class);
     private final List<ResourceCleaner> resourceCleaners;
 
+    /**
+     * Constructs a new Main instance with the specified resource cleaners and AWS region.
+     *
+     * @param resourceCleaners List of resource cleaners to be executed
+     * @param region AWS region where the cleaning will be performed
+     */
     @Autowired
     public Main(List<ResourceCleaner> resourceCleaners, Regions region) {
         LOGGER.info("Performing clean in region {} using {} cleaners", region, resourceCleaners.size());
         this.resourceCleaners = resourceCleaners;
     }
 
+    /**
+     * Main entry point for the application.
+     * Parses command line arguments, initializes the Spring context, and starts the cleaning process.
+     * If no arguments are provided, displays usage information.
+     *
+     * @param args Command line arguments. Use "--commit" to actually perform deletions.
+     */
     public static void main(String... args) {
         if (args.length == 0) {
             LOGGER.info("\n\nUsage: java -D.... -jar cleaner.jar"
@@ -62,6 +79,13 @@ public class Main {
         main.cleanEnvironment();
     }
 
+    /**
+     * Sets the commit flag for all resource cleaners.
+     * When commit is true, actual deletions will be performed.
+     * When commit is false, the operation runs in dry-run mode.
+     *
+     * @param commit true to perform actual deletions, false for dry-run mode
+     */
     public void setCommit(boolean commit) {
         if (commit) {
             LOGGER.warn("Committing Changes");
@@ -69,6 +93,10 @@ public class Main {
         resourceCleaners.forEach(o -> o.setCommit(commit));
     }
 
+    /**
+     * Executes the cleaning process for all registered resource cleaners.
+     * Each cleaner is processed sequentially to clean its respective AWS resources.
+     */
     public void cleanEnvironment() {
         LOGGER.info("Cleaning AWS resources");
         for (ResourceCleaner resourceCleaner : resourceCleaners) {

@@ -1,4 +1,4 @@
-# AWS Cleaner version 6.0.0
+# AWS Cleaner version 7.0.0
 
 Note we are not responsible for any use of this application. Warranty is not expressed nor implied!  Use at your own
 risk.
@@ -29,7 +29,7 @@ Framework for adding your own cleaners as spring beans.
 Dry run by default.  Add --commit after the -jar To commit changes
 
 ```
-java -D.... -jar aws-cleaner-6.0.0.jar 
+java -D.... -jar aws-cleaner-7.0.0.jar 
 -Dcleaner.region=<region> to override AWS region.
 -Dcleaner.cloudformation.whitelist=<comma,separated,stack,name,prefixes> to keep named stacks.
 -Dcleaner.role.arn=<roleArn> role to assume to access AWS.
@@ -38,14 +38,14 @@ java -D.... -jar aws-cleaner-6.0.0.jar
 
 ## Minimum Requirements
 
-* Java 17 (< version 6 is 11)
-* Access to aws account with appropriate privileges to destroy resources (this may be by assume role).
+* Java 21 (< version 6 is 17 < version 5 and below is 11)
+* Access to aws account with appropriate privileges to destroy resources (this may be an STS assume role).
                 
 ## Binaries
 
 ### curl
 ```
-curl -O https://repo1.maven.org/maven2/com/limemojito/oss/aws/aws-cleaner/6.0.0/aws-cleaner-6.0.0.jar
+curl -O https://repo1.maven.org/maven2/com/limemojito/oss/aws/aws-cleaner/7.0.0/aws-cleaner-7.0.0.jar
 ```
 
 
@@ -55,14 +55,17 @@ curl -O https://repo1.maven.org/maven2/com/limemojito/oss/aws/aws-cleaner/6.0.0/
 <dependency>
   <groupId>com.limemojito.oss.aws</groupId>
   <artifactId>aws-cleaner</artifactId>
-  <version>6.0.0</version>
+  <version>7.0.0</version>
 </dependency>
 ```
 
 
 ## Change log
 
-### 6.0 (2024)
+### 6.0 (2024-2025)
+
+### 7.0.0
+* Java 21 required, updated to the latest OSS framework.
 
 ### 6.0.0
 * Updated to latest open source framework and moved to GitHub.   Java 17 minimum required.
@@ -174,3 +177,34 @@ curl -O https://repo1.maven.org/maven2/com/limemojito/oss/aws/aws-cleaner/6.0.0/
 ### 2.0 - (2016)
      
 ### 1.0 - (2016)
+   
+---
+
+# Version Updates
+
+* The plugin update requires manual checks as it is a report.
+* Version updates automatic and are configured to skip alpha, beta, rc and old date format versions.
+* maven-versions-plugin has backup poms disabled as VCS is here.
+
+## Set a new release version
+```shell
+mvn versions:set -DprocessAllModules -DgenerateBackupPoms=false -DnewVersion=XX-SNAPSHOT 
+```
+Do a replacement in this readme file so that examples are updated to the new version.
+
+## Report on what plugin updates are available
+```shell
+   mvn versions:display-plugin-updates | more
+
+```
+
+## Update all library versions and parent dependencies
+```shell
+mvn versions:update-parent
+mvn versions:update-properties
+mvn versions:use-latest-releases
+```
+## Github Workflow
+For just running version updates on git using OSS lime mojito, there is a pre-canned workflow at .github/actions/oss-maven-patch-version.yml that updates and creates a PR.  Suggest configuring to run daily on a repository.
+
+See Article: https://limemojito.com/version-dependency-updates-automated-in-maven/

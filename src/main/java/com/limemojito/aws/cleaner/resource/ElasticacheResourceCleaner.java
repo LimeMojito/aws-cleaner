@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2024 Lime Mojito Pty Ltd
+ * Copyright 2011-2025 Lime Mojito Pty Ltd
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -30,17 +30,32 @@ import java.util.List;
 
 import static java.util.stream.Collectors.toList;
 
+/**
+ * Resource cleaner for AWS ElastiCache clusters.
+ * This cleaner identifies and deletes ElastiCache clusters that are in "available" state.
+ */
 @Service
 public class ElasticacheResourceCleaner extends PhysicalResourceCleaner {
     private static final Logger LOGGER = LoggerFactory.getLogger(ElasticacheResourceCleaner.class);
     private final AmazonElastiCache client;
 
+    /**
+     * Constructs a new ElasticacheResourceCleaner.
+     *
+     * @param client The AWS ElastiCache client
+     */
     @Autowired
     public ElasticacheResourceCleaner(AmazonElastiCache client) {
         super();
         this.client = client;
     }
 
+    /**
+     * {@inheritDoc}
+     * Retrieves a list of all ElastiCache cluster IDs that are in "available" state.
+     *
+     * @return A list of ElastiCache cluster IDs
+     */
     @Override
     protected List<String> getPhysicalResourceIds() {
         DescribeCacheClustersResult results = client.describeCacheClusters();
@@ -52,6 +67,12 @@ public class ElasticacheResourceCleaner extends PhysicalResourceCleaner {
                             .collect(toList());
     }
 
+    /**
+     * {@inheritDoc}
+     * Deletes an ElastiCache cluster identified by its ID.
+     *
+     * @param physicalId The ID of the ElastiCache cluster to delete
+     */
     @Override
     protected void performDelete(String physicalId) {
         LOGGER.info("Deleting cache {}", physicalId);

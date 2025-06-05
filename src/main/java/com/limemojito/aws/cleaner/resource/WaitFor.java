@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2024 Lime Mojito Pty Ltd
+ * Copyright 2011-2025 Lime Mojito Pty Ltd
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -19,11 +19,24 @@ package com.limemojito.aws.cleaner.resource;
 
 import lombok.extern.slf4j.Slf4j;
 
+/**
+ * Utility class for waiting for conditions to become true.
+ * This class provides methods to wait for a specified condition to become true,
+ * with configurable timeout and polling intervals.
+ */
 @Slf4j
 public class WaitFor {
 
     private static final int DEFAULT_POLLING_DELAY = 5000;
 
+    /**
+     * Waits for a specified condition to become true, with a custom polling delay.
+     *
+     * @param maxWaitSeconds Maximum time to wait in seconds
+     * @param pollingDelayMs Delay between polling attempts in milliseconds
+     * @param t The condition to check
+     * @return true if the condition became true within the timeout period, false otherwise
+     */
     public static boolean waitFor(int maxWaitSeconds, long pollingDelayMs, SituationToBecomeTrue t) {
         boolean timeout = waitForSituationOrTimeout(maxWaitSeconds, pollingDelayMs, t);
         if (!timeout) {
@@ -32,8 +45,31 @@ public class WaitFor {
         return timeout;
     }
 
+    /**
+     * Waits for a specified condition to become true, using the default polling delay.
+     *
+     * @param maxWaitSeconds Maximum time to wait in seconds
+     * @param t The condition to check
+     * @return true if the condition became true within the timeout period, false otherwise
+     */
     public static boolean waitFor(int maxWaitSeconds, SituationToBecomeTrue t) {
         return waitFor(maxWaitSeconds, DEFAULT_POLLING_DELAY, t);
+    }
+
+    /**
+     * Functional interface representing a condition that can be checked repeatedly.
+     * Implementations define a condition that the WaitFor utility will check until it becomes true
+     * or times out.
+     */
+    @FunctionalInterface
+    public interface SituationToBecomeTrue {
+        /**
+         * Evaluates whether the desired condition is true.
+         *
+         * @return true if the condition is satisfied, false otherwise
+         * @throws Exception if an error occurs while evaluating the condition
+         */
+        boolean situation() throws Exception;
     }
 
     private static boolean waitForSituationOrTimeout(int maxWaitSeconds, long pollingDelayMs, SituationToBecomeTrue t) {
@@ -63,9 +99,5 @@ public class WaitFor {
             log.debug("Exception trace: ", e);
             return false;
         }
-    }
-
-    public interface SituationToBecomeTrue {
-        boolean situation() throws Exception;
     }
 }

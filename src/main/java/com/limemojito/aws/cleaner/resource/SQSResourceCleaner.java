@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2024 Lime Mojito Pty Ltd
+ * Copyright 2011-2025 Lime Mojito Pty Ltd
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -26,21 +26,43 @@ import org.springframework.stereotype.Service;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Resource cleaner for AWS SQS queues.
+ * This cleaner identifies and deletes SQS queues in the AWS account.
+ */
 @Service
 public class SQSResourceCleaner extends PhysicalResourceCleaner {
     private static final Logger LOGGER = LoggerFactory.getLogger(SQSResourceCleaner.class);
     private final AmazonSQS client;
 
+    /**
+     * Constructs a new SQSResourceCleaner.
+     *
+     * @param client The AWS SQS client
+     */
     @Autowired
     public SQSResourceCleaner(AmazonSQS client) {
         this.client = client;
     }
 
+    /**
+     * {@inheritDoc}
+     * Retrieves a list of all SQS queue URLs in the AWS account.
+     *
+     * @return A list of SQS queue URLs
+     */
     @Override
     protected List<String> getPhysicalResourceIds() {
         return new ArrayList<>(client.listQueues().getQueueUrls());
     }
 
+    /**
+     * {@inheritDoc}
+     * Deletes an SQS queue identified by its URL.
+     *
+     * @param physicalId The URL of the SQS queue to delete
+     */
+    @Override
     protected void performDelete(String physicalId) {
         LOGGER.info("Deleting Queue {}", physicalId);
         client.deleteQueue(physicalId);

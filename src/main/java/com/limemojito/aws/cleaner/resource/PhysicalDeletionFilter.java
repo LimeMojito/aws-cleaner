@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2024 Lime Mojito Pty Ltd
+ * Copyright 2011-2025 Lime Mojito Pty Ltd
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -17,6 +17,17 @@
 
 package com.limemojito.aws.cleaner.resource;
 
+/**
+ * Interface for filtering AWS resources to determine which ones should be deleted.
+ * Implementations of this interface provide the logic to decide whether a specific
+ * AWS resource should be deleted based on its physical ID.
+ */
 public interface PhysicalDeletionFilter {
+    /**
+     * Determines whether a resource with the given physical ID should be deleted.
+     *
+     * @param physicalId The physical ID of the AWS resource to evaluate
+     * @return true if the resource should be deleted, false otherwise
+     */
     boolean shouldDelete(String physicalId);
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2024 Lime Mojito Pty Ltd
+ * Copyright 2011-2025 Lime Mojito Pty Ltd
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -25,6 +25,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.List;
 
+/**
+ * Abstract base class for resource cleaners that handle physical AWS resources.
+ * This class provides common functionality for identifying and deleting physical AWS resources.
+ * Subclasses need to implement methods to get resource IDs and perform the actual deletion.
+ */
 public abstract class PhysicalResourceCleaner implements ResourceCleaner {
     private static final Logger LOGGER = LoggerFactory.getLogger(PhysicalResourceCleaner.class);
     @Getter
@@ -32,21 +37,39 @@ public abstract class PhysicalResourceCleaner implements ResourceCleaner {
     @Getter
     private boolean commit;
 
+    /**
+     * Constructs a new PhysicalResourceCleaner with a default filter that allows deletion of all resources.
+     */
     public PhysicalResourceCleaner() {
         filter = physicalId -> true;
     }
 
+    /**
+     * {@inheritDoc}
+     * Sets the filter used to determine which resources should be deleted.
+     */
     @Override
     @Autowired
     public void setFilter(PhysicalDeletionFilter filter) {
         this.filter = filter;
     }
 
+    /**
+     * {@inheritDoc}
+     * Sets whether the cleaner should actually perform deletions or just simulate them.
+     */
     @Override
     public void setCommit(boolean commit) {
         this.commit = commit;
     }
 
+    /**
+     * {@inheritDoc}
+     * Implements the cleaning process by retrieving all physical resource IDs,
+     * filtering them based on the configured deletion filter, and then either
+     * logging what would be deleted (in dry-run mode) or actually performing
+     * the deletion with throttling.
+     */
     @Override
     public void clean() {
         final List<String> physicalResourceIdList = getPhysicalResourceIds();
@@ -63,7 +86,18 @@ public abstract class PhysicalResourceCleaner implements ResourceCleaner {
         }
     }
 
+    /**
+     * Retrieves the list of physical resource IDs that are candidates for deletion.
+     *
+     * @return A list of physical resource IDs
+     */
     protected abstract List<String> getPhysicalResourceIds();
 
+    /**
+     * Performs the actual deletion of a resource identified by its physical ID.
+     * This method is called only when commit mode is enabled.
+     *
+     * @param physicalId The physical ID of the resource to delete
+     */
     protected abstract void performDelete(String physicalId);
 }

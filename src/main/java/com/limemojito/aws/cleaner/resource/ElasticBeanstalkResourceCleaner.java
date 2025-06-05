@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2024 Lime Mojito Pty Ltd
+ * Copyright 2011-2025 Lime Mojito Pty Ltd
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -30,17 +30,33 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * Resource cleaner for AWS Elastic Beanstalk environments.
+ * This cleaner identifies and terminates Elastic Beanstalk environments that are in "Ready" state.
+ */
 @Service
 @Slf4j
 public class ElasticBeanstalkResourceCleaner extends PhysicalResourceCleaner {
     private final AWSElasticBeanstalk client;
 
+    /**
+     * Constructs a new ElasticBeanstalkResourceCleaner.
+     *
+     * @param client The AWS Elastic Beanstalk client
+     */
     @Autowired
     public ElasticBeanstalkResourceCleaner(AWSElasticBeanstalk client) {
         super();
         this.client = client;
     }
 
+    /**
+     * {@inheritDoc}
+     * Retrieves a list of all Elastic Beanstalk environment names that are in "Ready" state.
+     * If communication with the Elastic Beanstalk service fails, returns an empty list.
+     *
+     * @return A list of Elastic Beanstalk environment names
+     */
     @Override
     protected List<String> getPhysicalResourceIds() {
         try {
@@ -58,6 +74,12 @@ public class ElasticBeanstalkResourceCleaner extends PhysicalResourceCleaner {
         }
     }
 
+    /**
+     * {@inheritDoc}
+     * Terminates an Elastic Beanstalk environment identified by its name.
+     *
+     * @param physicalId The name of the Elastic Beanstalk environment to terminate
+     */
     @Override
     protected void performDelete(String physicalId) {
         log.info("Terminating environment {}", physicalId);

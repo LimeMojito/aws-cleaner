@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2024 Lime Mojito Pty Ltd
+ * Copyright 2011-2025 Lime Mojito Pty Ltd
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -36,6 +36,11 @@ import java.util.stream.Collectors;
 
 import static com.limemojito.aws.cleaner.resource.Throttle.performWithThrottle;
 
+/**
+ * Resource cleaner for AWS SNS topics and subscriptions.
+ * This cleaner identifies and deletes SNS topics and also handles dangling SQS subscriptions
+ * (subscriptions to queues that no longer exist).
+ */
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -47,6 +52,11 @@ public class SNSResourceCleaner extends PhysicalResourceCleaner {
     private final AmazonSQS sqs;
 
 
+    /**
+     * {@inheritDoc}
+     * Extends the base implementation to also clean up dangling SQS subscriptions
+     * (subscriptions to queues that no longer exist).
+     */
     @Override
     public void clean() {
         super.clean();
@@ -60,6 +70,37 @@ public class SNSResourceCleaner extends PhysicalResourceCleaner {
         } while (listSubscriptionsRequest.getNextToken() != null);
     }
 
+    /**
+     * {@inheritDoc}
+     * Retrieves a list of all SNS topic ARNs in the AWS account.
+     *
+     * @return A list of SNS topic ARNs
+     */
+    @Override
+    protected List<String> getPhysicalResourceIds() {
+        return client.listTopics().getTopics().stream()
+                .map(Topic::getTopicArn)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * {@inheritDoc}
+     * Deletes an SNS topic and all its subscriptions.
+     * First unsubscribes all subscriptions to the topic, then deletes the topic itself.
+     *
+     * @param physicalId The ARN of the SNS topic to delete
+     */
+    @Override
+    protected void performDelete(String physicalId) {
+        log.info("Deleting Topic {} and all subscriptions", physicalId);
+        client.listSubscriptionsByTopic(physicalId)
+                .getSubscriptions()
+                .stream()
+                .map(Subscription::getSubscriptionArn)
+                .forEach(this::unsubscribe);
+        client.deleteTopic(physicalId);
+    }
+
     private void removeSqsSubscription(Subscription subscription) {
         log.debug("Checking {}", subscription.getSubscriptionArn());
         if (getFilter().shouldDelete(subscription.getSubscriptionArn())
@@ -69,8 +110,8 @@ public class SNSResourceCleaner extends PhysicalResourceCleaner {
             if (matcher.matches()) {
                 try {
                     performWithThrottle(() ->
-                            sqs.getQueueUrl(new GetQueueUrlRequest(matcher.group(QUEUE_NAME_GROUP))
-                                    .withQueueOwnerAWSAccountId(matcher.group(AWS_ACCOUNT_GROUP))));
+                                                sqs.getQueueUrl(new GetQueueUrlRequest(matcher.group(QUEUE_NAME_GROUP))
+                                                                        .withQueueOwnerAWSAccountId(matcher.group(AWS_ACCOUNT_GROUP))));
                 } catch (QueueDoesNotExistException e) {
                     removeQueueSubscription(subscription);
                 }
@@ -81,31 +122,14 @@ public class SNSResourceCleaner extends PhysicalResourceCleaner {
     private void removeQueueSubscription(Subscription subscription) {
         if (isCommit()) {
             log.info("Removing dangling subscription {} to {}",
-                    subscription.getSubscriptionArn(),
-                    subscription.getEndpoint());
+                     subscription.getSubscriptionArn(),
+                     subscription.getEndpoint());
             unsubscribe(subscription.getSubscriptionArn());
         } else {
             log.info("Would delete dangling subscription {} to {}",
-                    subscription.getSubscriptionArn(),
-                    subscription.getEndpoint());
+                     subscription.getSubscriptionArn(),
+                     subscription.getEndpoint());
         }
-    }
-
-    @Override
-    protected List<String> getPhysicalResourceIds() {
-        return client.listTopics().getTopics().stream()
-                .map(Topic::getTopicArn)
-                .collect(Collectors.toList());
-    }
-
-    protected void performDelete(String physicalId) {
-        log.info("Deleting Topic {} and all subscriptions", physicalId);
-        client.listSubscriptionsByTopic(physicalId)
-                .getSubscriptions()
-                .stream()
-                .map(Subscription::getSubscriptionArn)
-                .forEach(this::unsubscribe);
-        client.deleteTopic(physicalId);
     }
 
     private void unsubscribe(String subArn) {

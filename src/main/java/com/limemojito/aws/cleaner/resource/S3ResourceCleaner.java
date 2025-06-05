@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2024 Lime Mojito Pty Ltd
+ * Copyright 2011-2025 Lime Mojito Pty Ltd
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -18,15 +18,7 @@
 package com.limemojito.aws.cleaner.resource;
 
 import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.model.AmazonS3Exception;
-import com.amazonaws.services.s3.model.Bucket;
-import com.amazonaws.services.s3.model.DeleteObjectsRequest;
-import com.amazonaws.services.s3.model.HeadBucketRequest;
-import com.amazonaws.services.s3.model.ListVersionsRequest;
-import com.amazonaws.services.s3.model.ObjectListing;
-import com.amazonaws.services.s3.model.S3ObjectSummary;
-import com.amazonaws.services.s3.model.S3VersionSummary;
-import com.amazonaws.services.s3.model.VersionListing;
+import com.amazonaws.services.s3.model.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -35,17 +27,34 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * Resource cleaner for AWS S3 buckets.
+ * This cleaner identifies and deletes S3 buckets in the current AWS region.
+ * It handles the deletion of all objects and versions within a bucket before deleting the bucket itself.
+ */
 @Service
 @Slf4j
 public class S3ResourceCleaner extends PhysicalResourceCleaner {
     private final AmazonS3 client;
 
+    /**
+     * Constructs a new S3ResourceCleaner.
+     *
+     * @param client The AWS S3 client
+     */
     @Autowired
     public S3ResourceCleaner(AmazonS3 client) {
         super();
         this.client = client;
     }
 
+    /**
+     * {@inheritDoc}
+     * Retrieves a list of all S3 bucket names in the current AWS region.
+     * Filters out buckets that are not in the same region as the client.
+     *
+     * @return A list of S3 bucket names in the current region
+     */
     @Override
     protected List<String> getPhysicalResourceIds() {
         return client.listBuckets()
@@ -55,6 +64,14 @@ public class S3ResourceCleaner extends PhysicalResourceCleaner {
                      .collect(Collectors.toList());
     }
 
+    /**
+     * {@inheritDoc}
+     * Deletes an S3 bucket identified by its name.
+     * This method handles the complex process of emptying the bucket (deleting all objects
+     * and versions) before attempting to delete the bucket itself.
+     *
+     * @param physicalId The name of the S3 bucket to delete
+     */
     @Override
     protected void performDelete(String physicalId) {
         deleteBucket(physicalId);
@@ -74,22 +91,23 @@ public class S3ResourceCleaner extends PhysicalResourceCleaner {
     }
 
     private void deleteBucket(String bucketName) {
-        log.info("Deleting bucket {}", bucketName);
         try {
+            log.info("Deleting bucket {}", bucketName);
             client.deleteBucket(bucketName);
         } catch (AmazonS3Exception e) {
             switch (e.getErrorCode()) {
-                case "AccessDenied":
+                case "AccessDenied" -> {
                     log.warn("Can not delete bucket {} as access denied", bucketName);
                     deleteAll(bucketName);
-                    break;
-                case "BucketNotEmpty":
+                }
+                case "BucketNotEmpty" -> {
                     deleteAll(bucketName);
                     deleteBucket(bucketName);
-                    break;
-                default:
+                }
+                default -> {
                     log.warn("Received error {} {} {}", e.getErrorCode(), e.getMessage(), e.getAdditionalDetails());
                     throw e;
+                }
             }
         }
     }
@@ -141,7 +159,7 @@ public class S3ResourceCleaner extends PhysicalResourceCleaner {
         final List<DeleteObjectsRequest.KeyVersion> keys = new ArrayList<>(objectSummaries.size());
         keys.addAll(objectSummaries.stream()
                                    .map(objectSummary -> new DeleteObjectsRequest.KeyVersion(objectSummary.getKey()))
-                                   .collect(Collectors.toList()));
+                                   .toList());
         deleteObjectsRequest.setKeys(keys);
         return deleteObjectsRequest;
     }
