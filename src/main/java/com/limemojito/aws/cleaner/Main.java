@@ -59,7 +59,7 @@ public class Main {
      */
     public static void main(String... args) {
         LOGGER.info("""
-                            Usage: java -D.... -jar cleaner.jar\n
+                            Usage: java -D.... -jar aws-cleaner-XXXX.jar\n
                             \t-Dcleaner.region=<region> to override AWS region.
                             \t-Dcleaner.cloudformation.whitelist=<comma,separated,stack,name,prefixes> to keep named stacks.
                             \t-Dcleaner.skip.names=<comma,separated,name,contains> to keep name containing resources.

@@ -29,7 +29,7 @@ Framework for adding your own cleaners as spring beans.
 Dry run by default.  Add --commit after the -jar To commit changes
 
 ```
-java -D.... -jar aws-cleaner-7.1.0.jar 
+java -D.... -jar aws-cleaner-7.1.0.jar [--commit]
 -Dcleaner.region=<region> to override AWS region.
 -Dcleaner.cloudformation.whitelist=<comma,separated,stack,name,prefixes> to keep named stacks.
 -Dcleaner.skip.names=<comma,separated,name,contains> to keep name containing resources.
@@ -63,21 +63,25 @@ curl -O https://repo1.maven.org/maven2/com/limemojito/oss/aws/aws-cleaner/7.1.0/
 
 ## Change log
              
-# 7 (2025)
+# 7
 
 ### 7.1.0
 * Added name based exclusion of resource deletion to help with CDK and ad-hoc manual setups such as once of event bridge, etc.
 * Removed use of AWS SDk 1 due to end of life Dec 2025.
 
-### 7.0.0
+### 7.0.0 (2025)
 * Java 21 required, updated to the latest OSS framework.
+  
+---
+# 6
 
 # 6 (2024)
 
-### 6.0.0
+### 6.0.0  (2024)
 * Updated to latest open source framework and moved to GitHub.   Java 17 minimum required.
 
 ---
+# 5
 
 ## 5.2 (2022-2023)
 
@@ -117,7 +121,6 @@ curl -O https://repo1.maven.org/maven2/com/limemojito/oss/aws/aws-cleaner/7.1.0/
 * SQS Queue Cleaner (v2).
 
 ---
-
 ## 5.1 (2020)
 
 ### 5.1.3
@@ -138,10 +141,7 @@ curl -O https://repo1.maven.org/maven2/com/limemojito/oss/aws/aws-cleaner/7.1.0/
 * Cloudformation delete in reverse export order.
 * Library updates, boot version update
 
----    
-
-# 5 (2020)
-
+---
 ### 5.0.1
 
 * Remove certificate resource cleaner as hits AWS cert issue limits faster with repeated use.
@@ -152,7 +152,6 @@ curl -O https://repo1.maven.org/maven2/com/limemojito/oss/aws/aws-cleaner/7.1.0/
 * Library updates, boot version update, JDK update to 11
 
 ---    
-
 # 4 (2018)
 
 ### 4.0.2
@@ -166,7 +165,6 @@ curl -O https://repo1.maven.org/maven2/com/limemojito/oss/aws/aws-cleaner/7.1.0/
 * Always execute CFM first, then clean orphan resources.
 
 ---    
-
 # 3 (2018)
 
 ### 3.0.4
