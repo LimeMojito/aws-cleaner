@@ -17,13 +17,11 @@
 
 package com.limemojito.aws.cleaner.resource;
 
-import com.amazonaws.services.logs.AWSLogs;
-import com.amazonaws.services.logs.model.DeleteLogGroupRequest;
-import com.amazonaws.services.logs.model.DescribeLogGroupsRequest;
-import com.amazonaws.services.logs.model.LogGroup;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import software.amazon.awssdk.services.cloudwatchlogs.CloudWatchLogsClient;
+import software.amazon.awssdk.services.cloudwatchlogs.model.LogGroup;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -36,7 +34,7 @@ import java.util.stream.Collectors;
 @Slf4j
 @RequiredArgsConstructor
 public class LogGroupCleaner extends PhysicalResourceCleaner {
-    private final AWSLogs client;
+    private final CloudWatchLogsClient client;
 
     /**
      * {@inheritDoc}
@@ -47,10 +45,10 @@ public class LogGroupCleaner extends PhysicalResourceCleaner {
     @Override
     protected List<String> getPhysicalResourceIds() {
         return client.describeLogGroups()
-                .getLogGroups()
-                .stream()
-                .map(LogGroup::getLogGroupName)
-                .collect(Collectors.toList());
+                     .logGroups()
+                     .stream()
+                     .map(LogGroup::logGroupName)
+                     .collect(Collectors.toList());
     }
 
     /**
@@ -62,12 +60,12 @@ public class LogGroupCleaner extends PhysicalResourceCleaner {
      */
     protected void performDelete(String physicalId) {
         log.debug("Checking group {}", physicalId);
-        if (client.describeLogGroups(new DescribeLogGroupsRequest().withLogGroupNamePrefix(physicalId))
-                .getLogGroups()
-                .getFirst()
-                .getStoredBytes() == 0) {
+        if (client.describeLogGroups(r -> r.logGroupNamePrefix(physicalId))
+                  .logGroups()
+                  .getFirst()
+                  .storedBytes() == 0) {
             log.info("Removing group {}", physicalId);
-            client.deleteLogGroup(new DeleteLogGroupRequest(physicalId));
+            client.deleteLogGroup(r -> r.logGroupName(physicalId));
         }
     }
 }

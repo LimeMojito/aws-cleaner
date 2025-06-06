@@ -17,18 +17,18 @@
 
 package com.limemojito.aws.cleaner.resource;
 
-import com.amazonaws.SdkClientException;
-import com.amazonaws.services.elasticbeanstalk.AWSElasticBeanstalk;
-import com.amazonaws.services.elasticbeanstalk.model.DescribeEnvironmentsResult;
-import com.amazonaws.services.elasticbeanstalk.model.EnvironmentDescription;
-import com.amazonaws.services.elasticbeanstalk.model.TerminateEnvironmentRequest;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import software.amazon.awssdk.core.exception.SdkClientException;
+import software.amazon.awssdk.services.elasticbeanstalk.ElasticBeanstalkClient;
+import software.amazon.awssdk.services.elasticbeanstalk.model.EnvironmentDescription;
 
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
+
+import static software.amazon.awssdk.services.elasticbeanstalk.model.EnvironmentStatus.READY;
 
 /**
  * Resource cleaner for AWS Elastic Beanstalk environments.
@@ -36,19 +36,9 @@ import java.util.stream.Collectors;
  */
 @Service
 @Slf4j
+@RequiredArgsConstructor
 public class ElasticBeanstalkResourceCleaner extends PhysicalResourceCleaner {
-    private final AWSElasticBeanstalk client;
-
-    /**
-     * Constructs a new ElasticBeanstalkResourceCleaner.
-     *
-     * @param client The AWS Elastic Beanstalk client
-     */
-    @Autowired
-    public ElasticBeanstalkResourceCleaner(AWSElasticBeanstalk client) {
-        super();
-        this.client = client;
-    }
+    private final ElasticBeanstalkClient client;
 
     /**
      * {@inheritDoc}
@@ -60,14 +50,13 @@ public class ElasticBeanstalkResourceCleaner extends PhysicalResourceCleaner {
     @Override
     protected List<String> getPhysicalResourceIds() {
         try {
-            final DescribeEnvironmentsResult result = client.describeEnvironments();
-            final List<EnvironmentDescription> environments = result.getEnvironments();
-            log.debug("{} environments found", environments.size());
-            return environments.stream()
-                               .filter(environmentDescription -> environmentDescription.getStatus()
-                                                                                       .equalsIgnoreCase("Ready"))
-                               .map(EnvironmentDescription::getEnvironmentName)
-                               .collect(Collectors.toList());
+            log.debug("Querying elastic beanstalk resources");
+            return client.describeEnvironments()
+                         .environments()
+                         .stream()
+                         .filter(environmentDescription -> environmentDescription.status() == READY)
+                         .map(EnvironmentDescription::environmentName)
+                         .collect(Collectors.toList());
         } catch (SdkClientException e) {
             log.warn("Could not communicate with elastic beanstalk: {}", e.getMessage(), e);
             return Collections.emptyList();
@@ -83,6 +72,6 @@ public class ElasticBeanstalkResourceCleaner extends PhysicalResourceCleaner {
     @Override
     protected void performDelete(String physicalId) {
         log.info("Terminating environment {}", physicalId);
-        client.terminateEnvironment(new TerminateEnvironmentRequest().withEnvironmentName(physicalId));
+        client.terminateEnvironment(r -> r.environmentName(physicalId));
     }
 }

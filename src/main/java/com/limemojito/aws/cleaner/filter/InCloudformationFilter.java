@@ -15,19 +15,20 @@
  *
  */
 
-package com.limemojito.aws.cleaner.resource;
+package com.limemojito.aws.cleaner.filter;
 
-import com.amazonaws.services.cloudformation.AmazonCloudFormation;
-import com.amazonaws.services.cloudformation.model.AmazonCloudFormationException;
-import com.amazonaws.services.cloudformation.model.DescribeStackResourcesRequest;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
+import com.limemojito.aws.cleaner.resource.Throttle;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
+import software.amazon.awssdk.services.cloudformation.CloudFormationClient;
+import software.amazon.awssdk.services.cloudformation.model.CloudFormationException;
+import software.amazon.awssdk.services.cloudformation.model.DescribeStackResourcesResponse;
+import software.amazon.awssdk.services.cloudformation.model.StackResource;
 
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
-
-import static com.limemojito.aws.cleaner.resource.Throttle.performWithThrottle;
+import java.util.stream.Collectors;
 
 /**
  * Filter implementation that determines if a resource should be deleted based on whether
@@ -35,20 +36,11 @@ import static com.limemojito.aws.cleaner.resource.Throttle.performWithThrottle;
  * Resources that are managed by CloudFormation stacks are preserved, while standalone
  * resources are candidates for deletion.
  */
-@Service
-public class InCloudformationFilter implements PhysicalDeletionFilter {
-    private static final Logger LOGGER = LoggerFactory.getLogger(InCloudformationFilter.class);
-    private final AmazonCloudFormation cloudFormation;
-
-    /**
-     * Constructs a new InCloudformationFilter with the specified CloudFormation client.
-     *
-     * @param cloudFormation The AWS CloudFormation client
-     */
-    @Autowired
-    public InCloudformationFilter(AmazonCloudFormation cloudFormation) {
-        this.cloudFormation = cloudFormation;
-    }
+@Component
+@Slf4j
+@RequiredArgsConstructor
+public class InCloudformationFilter implements DeletionFilter {
+    private final CloudFormationClient cloudFormation;
 
     /**
      * Determines if a resource should be deleted by checking if it belongs to a CloudFormation stack.
@@ -56,24 +48,30 @@ public class InCloudformationFilter implements PhysicalDeletionFilter {
      *
      * @param physicalId The physical ID of the AWS resource to evaluate
      * @return true if the resource should be deleted (not in a CloudFormation stack),
-     *         false if it should be preserved (part of a CloudFormation stack)
+     * false if it should be preserved (part of a CloudFormation stack)
      */
     @Override
     public boolean shouldDelete(String physicalId) {
         final AtomicBoolean resourceInCloudformationStack = new AtomicBoolean();
-        performWithThrottle(() -> {
+        Throttle.performWithThrottle(() -> {
             final boolean inCf = isInCloudformation(physicalId);
             resourceInCloudformationStack.set(inCf);
-            LOGGER.debug("is {} in cloudformation? {}", physicalId, inCf);
+            log.debug("is {} in cloudformation? {}", physicalId, inCf);
         });
         return !resourceInCloudformationStack.get();
     }
 
     private boolean isInCloudformation(String physicalId) {
         try {
-            cloudFormation.describeStackResources(new DescribeStackResourcesRequest().withPhysicalResourceId(physicalId));
-            return true;
-        } catch (AmazonCloudFormationException e) {
+            final DescribeStackResourcesResponse describeStackResourcesResponse = cloudFormation.describeStackResources(
+                    r -> r.physicalResourceId(physicalId));
+            final Set<String> stacks = describeStackResourcesResponse.stackResources()
+                                                                     .stream()
+                                                                     .map(StackResource::stackName)
+                                                                     .collect(Collectors.toSet());
+            log.debug("{} is in stack(s) {}", physicalId, stacks);
+            return describeStackResourcesResponse.hasStackResources();
+        } catch (CloudFormationException e) {
             if (e.getMessage().contains("Stack") && e.getMessage().contains("does not exist")) {
                 return false;
             } else {

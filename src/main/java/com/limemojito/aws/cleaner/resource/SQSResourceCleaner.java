@@ -17,13 +17,11 @@
 
 package com.limemojito.aws.cleaner.resource;
 
-import com.amazonaws.services.sqs.AmazonSQS;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import software.amazon.awssdk.services.sqs.SqsClient;
 
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -31,19 +29,10 @@ import java.util.List;
  * This cleaner identifies and deletes SQS queues in the AWS account.
  */
 @Service
+@Slf4j
+@RequiredArgsConstructor
 public class SQSResourceCleaner extends PhysicalResourceCleaner {
-    private static final Logger LOGGER = LoggerFactory.getLogger(SQSResourceCleaner.class);
-    private final AmazonSQS client;
-
-    /**
-     * Constructs a new SQSResourceCleaner.
-     *
-     * @param client The AWS SQS client
-     */
-    @Autowired
-    public SQSResourceCleaner(AmazonSQS client) {
-        this.client = client;
-    }
+    private final SqsClient client;
 
     /**
      * {@inheritDoc}
@@ -53,7 +42,11 @@ public class SQSResourceCleaner extends PhysicalResourceCleaner {
      */
     @Override
     protected List<String> getPhysicalResourceIds() {
-        return new ArrayList<>(client.listQueues().getQueueUrls());
+        log.debug("Getting SQS Queue URLs");
+        return client.listQueuesPaginator()
+                     .stream()
+                     .flatMap(page -> page.queueUrls().stream())
+                     .toList();
     }
 
     /**
@@ -64,7 +57,7 @@ public class SQSResourceCleaner extends PhysicalResourceCleaner {
      */
     @Override
     protected void performDelete(String physicalId) {
-        LOGGER.info("Deleting Queue {}", physicalId);
-        client.deleteQueue(physicalId);
+        log.info("Deleting Queue {}", physicalId);
+        client.deleteQueue(r -> r.queueUrl(physicalId));
     }
 }

@@ -15,14 +15,15 @@
  *
  */
 
-package com.limemojito.aws.cleaner.resource;
+package com.limemojito.aws.cleaner.filter;
 
 /**
  * Interface for filtering AWS resources to determine which ones should be deleted.
  * Implementations of this interface provide the logic to decide whether a specific
  * AWS resource should be deleted based on its physical ID.
  */
-public interface PhysicalDeletionFilter {
+@FunctionalInterface
+public interface DeletionFilter {
     /**
      * Determines whether a resource with the given physical ID should be deleted.
      *

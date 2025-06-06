@@ -17,43 +17,31 @@
 
 package com.limemojito.aws.cleaner.config;
 
-import com.amazonaws.auth.AWSCredentialsProvider;
-import com.amazonaws.auth.AWSStaticCredentialsProvider;
-import com.amazonaws.auth.BasicSessionCredentials;
-import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
-import com.amazonaws.regions.Regions;
-import com.amazonaws.services.certificatemanager.AWSCertificateManager;
-import com.amazonaws.services.certificatemanager.AWSCertificateManagerClientBuilder;
-import com.amazonaws.services.cloudformation.AmazonCloudFormation;
-import com.amazonaws.services.cloudformation.AmazonCloudFormationClient;
-import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
-import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient;
-import com.amazonaws.services.elasticache.AmazonElastiCache;
-import com.amazonaws.services.elasticache.AmazonElastiCacheClient;
-import com.amazonaws.services.elasticbeanstalk.AWSElasticBeanstalk;
-import com.amazonaws.services.elasticbeanstalk.AWSElasticBeanstalkClient;
-import com.amazonaws.services.identitymanagement.AmazonIdentityManagement;
-import com.amazonaws.services.identitymanagement.AmazonIdentityManagementClient;
-import com.amazonaws.services.logs.AWSLogs;
-import com.amazonaws.services.logs.AWSLogsClient;
-import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.AmazonS3Client;
-import com.amazonaws.services.securitytoken.AWSSecurityTokenService;
-import com.amazonaws.services.securitytoken.AWSSecurityTokenServiceClientBuilder;
-import com.amazonaws.services.securitytoken.model.AssumeRoleRequest;
-import com.amazonaws.services.securitytoken.model.Credentials;
-import com.amazonaws.services.sns.AmazonSNS;
-import com.amazonaws.services.sns.AmazonSNSClient;
-import com.amazonaws.services.sqs.AmazonSQS;
-import com.amazonaws.services.sqs.AmazonSQSClient;
+
 import com.limemojito.aws.cleaner.Main;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.PropertySource;
+import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
+import software.amazon.awssdk.auth.credentials.AwsSessionCredentials;
+import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
+import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
+import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.cloudformation.CloudFormationClient;
+import software.amazon.awssdk.services.cloudwatchlogs.CloudWatchLogsClient;
+import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
+import software.amazon.awssdk.services.elasticache.ElastiCacheClient;
+import software.amazon.awssdk.services.elasticbeanstalk.ElasticBeanstalkClient;
+import software.amazon.awssdk.services.iam.IamClient;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.sns.SnsClient;
+import software.amazon.awssdk.services.sqs.SqsClient;
+import software.amazon.awssdk.services.sts.StsClient;
+import software.amazon.awssdk.services.sts.model.AssumeRoleRequest;
+import software.amazon.awssdk.services.sts.model.Credentials;
 
 import java.util.Scanner;
 
@@ -67,8 +55,8 @@ import static org.apache.commons.lang3.StringUtils.isBlank;
 @Configuration
 @PropertySource("classpath:/cleaner.properties")
 @ComponentScan(basePackageClasses = Main.class)
+@Slf4j
 public class CleanerConfig {
-    private static final Logger LOGGER = LoggerFactory.getLogger(CleanerConfig.class);
 
     /**
      * Provides the AWS region to use for all AWS clients.
@@ -77,22 +65,8 @@ public class CleanerConfig {
      * @return The AWS region enum value
      */
     @Bean
-    public Regions region(@Value("${cleaner.region}") String regionName) {
-        return Regions.valueOf(regionName);
-    }
-
-    /**
-     * Creates an AWS Security Token Service client.
-     * This client is used for assuming roles and handling MFA authentication.
-     *
-     * @param region The AWS region to use
-     * @return The AWS Security Token Service client
-     */
-    @Bean(destroyMethod = "shutdown")
-    public AWSSecurityTokenService tokenService(Regions region) {
-        return AWSSecurityTokenServiceClientBuilder.standard()
-                .withRegion(region)
-                .build();
+    public Region region(@Value("${cleaner.region}") String regionName) {
+        return Region.of(regionName);
     }
 
     /**
@@ -113,39 +87,52 @@ public class CleanerConfig {
     }
 
     /**
+     * Creates an AWS Security Token Service client.
+     * This client is used for assuming roles and handling MFA authentication.
+     *
+     * @param region The AWS region to use
+     * @return The AWS Security Token Service client
+     */
+    @Bean(destroyMethod = "close")
+    public StsClient tokenService(Region region) {
+        return StsClient.builder()
+                        .region(region)
+                        .build();
+    }
+
+    /**
      * Creates an AWS credentials provider that handles role assumption and MFA if configured.
      * If a role ARN is provided, assumes that role. If an MFA ARN is also provided,
      * uses the MFA code when assuming the role.
      *
-     * @param roleArn The ARN of the role to assume, if any
-     * @param mfaArn The ARN of the MFA device, if any
+     * @param roleArn      The ARN of the role to assume, if any
+     * @param mfaArn       The ARN of the MFA device, if any
      * @param tokenService The AWS Security Token Service client
-     * @param mfaCode The MFA code, if MFA is configured
+     * @param mfaCode      The MFA code, if MFA is configured
      * @return An AWS credentials provider
      */
     @Bean
-    public AWSCredentialsProvider credentialsProvider(@Value("${cleaner.role.arn}") String roleArn,
+    public AwsCredentialsProvider credentialsProvider(@Value("${cleaner.role.arn}") String roleArn,
                                                       @Value("${cleaner.mfa.arn}") String mfaArn,
-                                                      AWSSecurityTokenService tokenService,
+                                                      StsClient tokenService,
                                                       String mfaCode) {
         if (!isBlank(roleArn)) {
-            LOGGER.info("Preparing credentials for Role: {}", roleArn);
-            final AssumeRoleRequest roleRequest = new AssumeRoleRequest().withRoleArn(roleArn)
-                    .withRoleSessionName("aws-cleaner");
+            log.info("Preparing credentials for Role: {}", roleArn);
+            final AssumeRoleRequest.Builder roleRequest = AssumeRoleRequest.builder()
+                                                                           .roleArn(roleArn)
+                                                                           .roleSessionName("aws-cleaner");
             if (!isBlank(mfaArn)) {
-                LOGGER.info("Using MFA code with {}", mfaArn);
-                roleRequest.withSerialNumber(mfaArn);
-                roleRequest.withTokenCode(mfaCode);
+                log.info("Using MFA code with {}", mfaArn);
+                roleRequest.serialNumber(mfaArn);
+                roleRequest.tokenCode(mfaCode);
             }
-            final Credentials credentials = tokenService.assumeRole(roleRequest)
-                    .getCredentials();
-            final BasicSessionCredentials sessionCredentials = new BasicSessionCredentials(
-                    credentials.getAccessKeyId(),
-                    credentials.getSecretAccessKey(),
-                    credentials.getSessionToken());
-            return new AWSStaticCredentialsProvider(sessionCredentials);
+            final Credentials credentials = tokenService.assumeRole(roleRequest.build()).credentials();
+            final AwsSessionCredentials sessionCredentials = AwsSessionCredentials.create(credentials.accessKeyId(),
+                                                                                          credentials.secretAccessKey(),
+                                                                                          credentials.sessionToken());
+            return StaticCredentialsProvider.create(sessionCredentials);
         } else {
-            return new DefaultAWSCredentialsProviderChain();
+            return DefaultCredentialsProvider.builder().build();
         }
     }
 
@@ -155,144 +142,130 @@ public class CleanerConfig {
      * @param credentialsProvider The AWS credentials provider
      * @return The AWS IAM client
      */
-    @Bean
-    public AmazonIdentityManagement identityManagement(AWSCredentialsProvider credentialsProvider) {
-        return AmazonIdentityManagementClient.builder()
-                .withCredentials(credentialsProvider)
-                .build();
+    @Bean(destroyMethod = "close")
+    public IamClient identityManagement(AwsCredentialsProvider credentialsProvider) {
+        return IamClient.builder()
+                        .credentialsProvider(credentialsProvider)
+                        .build();
     }
 
     /**
      * Creates an AWS DynamoDB client.
      *
      * @param credentialsProvider The AWS credentials provider
-     * @param region The AWS region to use
+     * @param region              The AWS region to use
      * @return The AWS DynamoDB client
      */
-    @Bean
-    public AmazonDynamoDB dynamoDBClient(AWSCredentialsProvider credentialsProvider, Regions region) {
-        return AmazonDynamoDBClient.builder()
-                .withCredentials(credentialsProvider)
-                .withRegion(region)
-                .build();
+    @Bean(destroyMethod = "close")
+    public DynamoDbClient dynamoDBClient(AwsCredentialsProvider credentialsProvider, Region region) {
+        return DynamoDbClient.builder()
+                             .credentialsProvider(credentialsProvider)
+                             .region(region)
+                             .build();
     }
 
     /**
      * Creates an AWS Elastic Beanstalk client.
      *
      * @param credentialsProvider The AWS credentials provider
-     * @param region The AWS region to use
+     * @param region              The AWS region to use
      * @return The AWS Elastic Beanstalk client
      */
-    @Bean
-    public AWSElasticBeanstalk ebClient(AWSCredentialsProvider credentialsProvider, Regions region) {
-        return AWSElasticBeanstalkClient.builder()
-                .withCredentials(credentialsProvider)
-                .withRegion(region)
-                .build();
+    @Bean(destroyMethod = "close")
+    public ElasticBeanstalkClient ebClient(AwsCredentialsProvider credentialsProvider, Region region) {
+        return ElasticBeanstalkClient.builder()
+                                     .credentialsProvider(credentialsProvider)
+                                     .region(region)
+                                     .build();
     }
 
     /**
      * Creates an AWS S3 client.
      *
      * @param credentialsProvider The AWS credentials provider
-     * @param region The AWS region to use
+     * @param region              The AWS region to use
      * @return The AWS S3 client
      */
-    @Bean
-    public AmazonS3 s3Client(AWSCredentialsProvider credentialsProvider, Regions region) {
-        return AmazonS3Client.builder()
-                .withCredentials(credentialsProvider)
-                .withRegion(region)
-                .build();
+    @Bean(destroyMethod = "close")
+    public S3Client s3Client(AwsCredentialsProvider credentialsProvider, Region region) {
+        return S3Client.builder()
+                       .credentialsProvider(credentialsProvider)
+                       .region(region)
+                       .build();
     }
 
     /**
      * Creates an AWS Simple Notification Service (SNS) client.
      *
      * @param credentialsProvider The AWS credentials provider
-     * @param region The AWS region to use
+     * @param region              The AWS region to use
      * @return The AWS SNS client
      */
-    @Bean
-    public AmazonSNS snsClient(AWSCredentialsProvider credentialsProvider, Regions region) {
-        return AmazonSNSClient.builder()
-                .withCredentials(credentialsProvider)
-                .withRegion(region)
-                .build();
+    @Bean(destroyMethod = "close")
+    public SnsClient snsClient(AwsCredentialsProvider credentialsProvider, Region region) {
+        return SnsClient.builder()
+                        .credentialsProvider(credentialsProvider)
+                        .region(region)
+                        .build();
     }
 
     /**
      * Creates an AWS Simple Queue Service (SQS) client.
      *
      * @param credentialsProvider The AWS credentials provider
-     * @param region The AWS region to use
+     * @param region              The AWS region to use
      * @return The AWS SQS client
      */
-    @Bean
-    public AmazonSQS sqsClient(AWSCredentialsProvider credentialsProvider, Regions region) {
-        return AmazonSQSClient.builder()
-                .withCredentials(credentialsProvider)
-                .withRegion(region)
-                .build();
+    @Bean(destroyMethod = "close")
+    public SqsClient sqsClient(AwsCredentialsProvider credentialsProvider, Region region) {
+        return SqsClient.builder()
+                        .credentialsProvider(credentialsProvider)
+                        .region(region)
+                        .build();
     }
 
     /**
      * Creates an AWS ElastiCache client.
      *
      * @param credentialsProvider The AWS credentials provider
-     * @param region The AWS region to use
+     * @param region              The AWS region to use
      * @return The AWS ElastiCache client
      */
-    @Bean
-    public AmazonElastiCache elastiCacheClient(AWSCredentialsProvider credentialsProvider, Regions region) {
-        return AmazonElastiCacheClient.builder()
-                .withCredentials(credentialsProvider)
-                .withRegion(region)
-                .build();
+    @Bean(destroyMethod = "close")
+    public ElastiCacheClient elastiCacheClient(AwsCredentialsProvider credentialsProvider, Region region) {
+        return ElastiCacheClient.builder()
+                                .credentialsProvider(credentialsProvider)
+                                .region(region)
+                                .build();
     }
 
     /**
      * Creates an AWS CloudFormation client.
      *
      * @param credentialsProvider The AWS credentials provider
-     * @param region The AWS region to use
+     * @param region              The AWS region to use
      * @return The AWS CloudFormation client
      */
-    @Bean
-    public AmazonCloudFormation cloudFormationClient(AWSCredentialsProvider credentialsProvider, Regions region) {
-        return AmazonCloudFormationClient.builder()
-                .withCredentials(credentialsProvider)
-                .withRegion(region)
-                .build();
-    }
-
-    /**
-     * Creates an AWS Certificate Manager client.
-     *
-     * @param credentialsProvider The AWS credentials provider
-     * @param region The AWS region to use
-     * @return The AWS Certificate Manager client
-     */
-    @Bean
-    public AWSCertificateManager certificateManager(AWSCredentialsProvider credentialsProvider, Regions region) {
-        return AWSCertificateManagerClientBuilder.standard()
-                .withCredentials(credentialsProvider)
-                .withRegion(region).build();
+    @Bean(destroyMethod = "close")
+    public CloudFormationClient cloudFormationClient(AwsCredentialsProvider credentialsProvider, Region region) {
+        return CloudFormationClient.builder()
+                                   .credentialsProvider(credentialsProvider)
+                                   .region(region)
+                                   .build();
     }
 
     /**
      * Creates an AWS CloudWatch Logs client.
      *
      * @param credentialsProvider The AWS credentials provider
-     * @param region The AWS region to use
+     * @param region              The AWS region to use
      * @return The AWS CloudWatch Logs client
      */
-    @Bean
-    public AWSLogs cloudWatch(AWSCredentialsProvider credentialsProvider, Regions region) {
-        return AWSLogsClient.builder()
-                .withCredentials(credentialsProvider)
-                .withRegion(region)
-                .build();
+    @Bean(destroyMethod = "close")
+    public CloudWatchLogsClient cloudWatch(AwsCredentialsProvider credentialsProvider, Region region) {
+        return CloudWatchLogsClient.builder()
+                                   .credentialsProvider(credentialsProvider)
+                                   .region(region)
+                                   .build();
     }
 }

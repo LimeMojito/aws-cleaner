@@ -17,8 +17,8 @@
 
 package com.limemojito.aws.cleaner.resource;
 
-import com.amazonaws.AmazonServiceException;
 import lombok.extern.slf4j.Slf4j;
+import software.amazon.awssdk.awscore.exception.AwsServiceException;
 
 import java.time.Duration;
 
@@ -35,12 +35,40 @@ public class Throttle {
     private static final int MAX_ATTEMPTS = 7;
 
     /**
+     * Functional interface for AWS requests that return a result.
+     * Used with the performRequestWithThrottle method to execute AWS API calls
+     * that return a value.
+     */
+    @FunctionalInterface
+    public interface AwsRequest {
+        /**
+         * Executes an AWS request and returns the result.
+         *
+         * @return The result of the AWS request
+         */
+        Object performRequest();
+    }
+
+    /**
+     * Functional interface for AWS actions that don't return a result.
+     * Used with the performWithThrottle method to execute AWS API calls
+     * that don't return a value.
+     */
+    @FunctionalInterface
+    public interface AwsAction {
+        /**
+         * Executes an AWS action.
+         */
+        void performAction();
+    }
+
+    /**
      * Executes an AWS action with throttling protection.
      * If the action is throttled, it will be retried with exponential backoff.
      *
      * @param action The AWS action to execute
      */
-    static void performWithThrottle(AwsAction action) {
+    public static void performWithThrottle(AwsAction action) {
         performWithThrottle(action, 1);
     }
 
@@ -49,10 +77,10 @@ public class Throttle {
      * If the request is throttled, it will be retried with exponential backoff.
      *
      * @param request The AWS request to execute
-     * @param <T> The type of the result returned by the request
+     * @param <T>     The type of the result returned by the request
      * @return The result of the AWS request
      */
-    static <T> T performRequestWithThrottle(AwsRequest request) {
+    public static <T> T performRequestWithThrottle(AwsRequest request) {
         return performRequestWithThrottle(request, 1);
     }
 
@@ -60,7 +88,7 @@ public class Throttle {
         try {
             giveUp(attemptCount);
             action.performAction();
-        } catch (AmazonServiceException e) {
+        } catch (AwsServiceException e) {
             if (isThrottle(e)) {
                 waitForAttempt(attemptCount);
                 performWithThrottle(action, ++attemptCount);
@@ -75,7 +103,7 @@ public class Throttle {
         try {
             giveUp(attemptCount);
             return (T) request.performRequest();
-        } catch (AmazonServiceException e) {
+        } catch (AwsServiceException e) {
             if (isThrottle(e)) {
                 waitForAttempt(attemptCount);
                 return performRequestWithThrottle(request, ++attemptCount);
@@ -91,8 +119,8 @@ public class Throttle {
         }
     }
 
-    private static boolean isThrottle(AmazonServiceException e) {
-        return "Throttling".equals(e.getErrorCode());
+    private static boolean isThrottle(AwsServiceException e) {
+        return "Throttling".equals(e.awsErrorDetails().errorCode());
     }
 
     private static void waitForAttempt(int attemptCount) {
@@ -103,33 +131,5 @@ public class Throttle {
         } catch (InterruptedException e1) {
             log.warn("Interrupted");
         }
-    }
-
-    /**
-     * Functional interface for AWS requests that return a result.
-     * Used with the performRequestWithThrottle method to execute AWS API calls
-     * that return a value.
-     */
-    @FunctionalInterface
-    interface AwsRequest {
-        /**
-         * Executes an AWS request and returns the result.
-         *
-         * @return The result of the AWS request
-         */
-        Object performRequest();
-    }
-
-    /**
-     * Functional interface for AWS actions that don't return a result.
-     * Used with the performWithThrottle method to execute AWS API calls
-     * that don't return a value.
-     */
-    @FunctionalInterface
-    interface AwsAction {
-        /**
-         * Executes an AWS action.
-         */
-        void performAction();
     }
 }

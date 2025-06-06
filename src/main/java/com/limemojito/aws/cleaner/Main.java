@@ -17,7 +17,6 @@
 
 package com.limemojito.aws.cleaner;
 
-import com.amazonaws.regions.Regions;
 import com.limemojito.aws.cleaner.config.CleanerConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,6 +24,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.context.support.AbstractApplicationContext;
 import org.springframework.stereotype.Service;
+import software.amazon.awssdk.regions.Region;
 
 import java.util.Arrays;
 import java.util.List;
@@ -42,10 +42,10 @@ public class Main {
      * Constructs a new Main instance with the specified resource cleaners and AWS region.
      *
      * @param resourceCleaners List of resource cleaners to be executed
-     * @param region AWS region where the cleaning will be performed
+     * @param region           AWS region where the cleaning will be performed
      */
     @Autowired
-    public Main(List<ResourceCleaner> resourceCleaners, Regions region) {
+    public Main(List<ResourceCleaner> resourceCleaners, Region region) {
         LOGGER.info("Performing clean in region {} using {} cleaners", region, resourceCleaners.size());
         this.resourceCleaners = resourceCleaners;
     }
@@ -58,16 +58,15 @@ public class Main {
      * @param args Command line arguments. Use "--commit" to actually perform deletions.
      */
     public static void main(String... args) {
-        if (args.length == 0) {
-            LOGGER.info("\n\nUsage: java -D.... -jar cleaner.jar"
-                                + "\n\t-Dcleaner.region=<region> to override AWS region."
-                                + "\n\t-Dcleaner.cloudformation.whitelist=<comma,separated,stack,name,prefixes> to keep named stacks."
-                                + "\n\t-Dcleaner.role.arn=<roleArn> role to assume to access AWS."
-                                + "\n\t-Dcleaner.mfa.arn=<mfaArn> device to use with Multi Factor Authentication (prompts for code)."
-                                + "\n"
-                                + "\n\t --commit to commit changes."
-                                + "\n\n");
-        }
+        LOGGER.info("""
+                            Usage: java -D.... -jar cleaner.jar\n
+                            \t-Dcleaner.region=<region> to override AWS region.
+                            \t-Dcleaner.cloudformation.whitelist=<comma,separated,stack,name,prefixes> to keep named stacks.
+                            \t-Dcleaner.skip.names=<comma,separated,name,contains> to keep name containing resources.
+                            \t-Dcleaner.role.arn=<roleArn> role to assume to access AWS.
+                            \t-Dcleaner.mfa.arn=<mfaArn> device to use with Multi Factor Authentication (prompts for code).
+                            \t --commit to commit changes.
+                            """);
         boolean commit = Arrays.asList(args).contains("--commit");
         if (!commit) {
             LOGGER.warn("performing dry run.");
