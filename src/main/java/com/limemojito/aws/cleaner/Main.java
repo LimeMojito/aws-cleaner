@@ -58,17 +58,16 @@ public class Main {
      * @param args Command line arguments. Use "--commit" to actually perform deletions.
      */
     public static void main(String... args) {
-        if (args.length == 0) {
-            LOGGER.info("\n\nUsage: java -D.... -jar cleaner.jar"
-                                + "\n\t-Dcleaner.region=<region> to override AWS region."
-                                + "\n\t-Dcleaner.cloudformation.whitelist=<comma,separated,stack,name,prefixes> to keep named stacks."
-                                + "\n\t-Dcleaner.skip.names=<comma,separated,name,contains> to keep name containing resources."
-                                + "\n\t-Dcleaner.role.arn=<roleArn> role to assume to access AWS."
-                                + "\n\t-Dcleaner.mfa.arn=<mfaArn> device to use with Multi Factor Authentication (prompts for code)."
-                                + "\n"
-                                + "\n\t --commit to commit changes."
-                                + "\n\n");
-        }
+        LOGGER.info("""
+                            Usage: java -D.... -jar cleaner.jar
+                            
+                            \t-Dcleaner.region=<region> to override AWS region.
+                            \t-Dcleaner.cloudformation.whitelist=<comma,separated,stack,name,prefixes> to keep named stacks.
+                            \t-Dcleaner.skip.names=<comma,separated,name,contains> to keep name containing resources.
+                            \t-Dcleaner.role.arn=<roleArn> role to assume to access AWS.
+                            \t-Dcleaner.mfa.arn=<mfaArn> device to use with Multi Factor Authentication (prompts for code).
+                            \t --commit to commit changes.
+                            """);
         boolean commit = Arrays.asList(args).contains("--commit");
         if (!commit) {
             LOGGER.warn("performing dry run.");
