@@ -35,8 +35,8 @@
         <github.url>https://github.com/LimeMojito/aws-cleaner</github.url>
         <git.url>git@github.com:LimeMojito/aws-cleaner.git</git.url>
 
-        <coverage.exclude.pattern.1>**Main</coverage.exclude.pattern.1>
-        <coverage.exclude.pattern.2>**resource*</coverage.exclude.pattern.2>
+        <!-- Use the development account as an integration test... !-->
+        <coverage.line.ratio>0</coverage.line.ratio>
     </properties>
 
     <name>AWS Cleaner</name>
