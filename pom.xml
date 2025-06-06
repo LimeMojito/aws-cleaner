@@ -21,7 +21,7 @@
 
     <groupId>com.limemojito.oss.aws</groupId>
     <artifactId>aws-cleaner</artifactId>
-    <version>7.1.0-SNAPSHOT</version>
+    <version>7.1.0</version>
     <packaging>jar</packaging>
 
     <parent>
