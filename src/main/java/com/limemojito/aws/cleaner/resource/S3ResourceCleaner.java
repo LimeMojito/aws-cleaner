@@ -17,14 +17,14 @@
 
 package com.limemojito.aws.cleaner.resource;
 
-import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.model.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.*;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -36,8 +36,9 @@ import java.util.stream.Collectors;
 @Service
 @Slf4j
 public class S3ResourceCleaner extends PhysicalResourceCleaner {
-    private final AmazonS3 client;
+    private final S3Client client;
     private final int bucketMax;
+    private final Region cleaningRegion;
 
     /**
      * Constructs a new S3ResourceCleaner.
@@ -45,10 +46,12 @@ public class S3ResourceCleaner extends PhysicalResourceCleaner {
      * @param client The AWS S3 client
      */
     @Autowired
-    public S3ResourceCleaner(AmazonS3 client, @Value("${cleaner.bucket.max}") int maxBuckets) {
-        super();
+    public S3ResourceCleaner(S3Client client,
+                             @Value("${cleaner.bucket.max}") int maxBuckets,
+                             Region cleaningRegion) {
         this.client = client;
-        bucketMax = maxBuckets;
+        this.bucketMax = maxBuckets;
+        this.cleaningRegion = cleaningRegion;
     }
 
     /**
@@ -60,12 +63,15 @@ public class S3ResourceCleaner extends PhysicalResourceCleaner {
      */
     @Override
     protected List<String> getPhysicalResourceIds() {
-        return client.listBuckets(new ListBucketsPaginatedRequest().withMaxBuckets(bucketMax))
-                     .getBuckets()
-                     .stream()
-                     .map(Bucket::getName)
-                     .filter(this::checkRegion)
-                     .collect(Collectors.toList());
+        log.info("Checking Buckets");
+        final List<String> collect = client.listBucketsPaginator(r -> r.maxBuckets(bucketMax))
+                                           .stream()
+                                           .flatMap(page -> page.buckets().stream())
+                                           .map(Bucket::name)
+                                           .filter(this::checkRegion)
+                                           .collect(Collectors.toList());
+        log.info("Found {} Buckets to remove {}", collect.size(), collect);
+        return collect;
     }
 
     /**
@@ -82,13 +88,12 @@ public class S3ResourceCleaner extends PhysicalResourceCleaner {
     }
 
     private boolean checkRegion(String name) {
-        final String cleaningRegion = client.getRegionName();
         try {
-            Object bucketRegion = Throttle.performRequestWithThrottle(() -> client.headBucket(new HeadBucketRequest(name))
-                                                                                  .getBucketRegion());
-            log.info("Bucket {} is in region {}, cleaning {}", name, bucketRegion, cleaningRegion);
-            return cleaningRegion.equals(bucketRegion);
-        } catch (AmazonS3Exception e) {
+            Object bucketRegion = Throttle.performRequestWithThrottle(() -> client.headBucket(r -> r.bucket(name))
+                                                                                  .bucketRegion());
+            log.debug("Bucket {} is in region {}, cleaning {}", name, bucketRegion, cleaningRegion);
+            return cleaningRegion.toString().equals(bucketRegion.toString());
+        } catch (S3Exception e) {
             log.debug("Can not head bucket {} from region {}", name, cleaningRegion);
             return false;
         }
@@ -97,9 +102,9 @@ public class S3ResourceCleaner extends PhysicalResourceCleaner {
     private void deleteBucket(String bucketName) {
         try {
             log.info("Deleting bucket {}", bucketName);
-            client.deleteBucket(bucketName);
-        } catch (AmazonS3Exception e) {
-            switch (e.getErrorCode()) {
+            client.deleteBucket(r -> r.bucket(bucketName));
+        } catch (S3Exception e) {
+            switch (e.awsErrorDetails().errorCode()) {
                 case "AccessDenied" -> {
                     log.warn("Can not delete bucket {} as access denied", bucketName);
                     deleteAll(bucketName);
@@ -109,7 +114,7 @@ public class S3ResourceCleaner extends PhysicalResourceCleaner {
                     deleteBucket(bucketName);
                 }
                 default -> {
-                    log.warn("Received error {} {} {}", e.getErrorCode(), e.getMessage(), e.getAdditionalDetails());
+                    log.warn("Received error {} {}", e.awsErrorDetails().errorCode(), e.getMessage());
                     throw e;
                 }
             }
@@ -119,52 +124,42 @@ public class S3ResourceCleaner extends PhysicalResourceCleaner {
     private void deleteAll(String bucketName) {
         log.info("Deleting all content in {}", bucketName);
         deleteAllObjects(bucketName);
+        // handle "deleted" versions
         deleteAllVersions(bucketName);
     }
 
     private void deleteAllVersions(String bucketName) {
-        VersionListing versionList = client.listVersions(new ListVersionsRequest().withBucketName(bucketName));
-        log.info("Deleting {} Versions", versionList.getVersionSummaries().size());
-        while (true) {
-            for (S3VersionSummary vs : versionList.getVersionSummaries()) {
-                log.debug("Deleting Version {}:{}", vs.getKey(), vs.getVersionId());
-                client.deleteVersion(bucketName, vs.getKey(), vs.getVersionId());
-            }
-            if (versionList.isTruncated()) {
-                versionList = client.listNextBatchOfVersions(versionList);
-            } else {
-                break;
-            }
-        }
+        log.info("Deleting Object Versions in bucket {}", bucketName);
+        client.listObjectVersionsPaginator(r -> r.bucket(bucketName))
+              .stream()
+              .forEach(page -> {
+                  for (ObjectVersion vs : page.versions()) {
+                      log.debug("Deleting Version {}:{}", vs.key(), vs.versionId());
+                      client.deleteObject(r -> r.bucket(bucketName)
+                                                .key(vs.key())
+                                                .versionId(vs.versionId())
+                                                .build());
+                  }
+              });
     }
 
     private void deleteAllObjects(String bucketName) {
-        ObjectListing objectListing = client.listObjects(bucketName);
-        log.info("Deleting {} Objects", objectListing.getObjectSummaries().size());
-        while (true) {
-            if (!objectListing.getObjectSummaries().isEmpty()) {
-                final List<S3ObjectSummary> objectSummaries = objectListing.getObjectSummaries();
-                log.debug("Creating delete objects request for {} objects", objectSummaries.size());
-                DeleteObjectsRequest request = createDeleteFilesRequest(objectListing);
-                client.deleteObjects(request);
-                log.debug("Delete objects request complete");
-            }
-            if (objectListing.isTruncated()) {
-                objectListing = client.listNextBatchOfObjects(objectListing);
-            } else {
-                break;
-            }
-        }
-    }
-
-    private DeleteObjectsRequest createDeleteFilesRequest(ObjectListing expectedFileList) {
-        final DeleteObjectsRequest deleteObjectsRequest = new DeleteObjectsRequest(expectedFileList.getBucketName());
-        final List<S3ObjectSummary> objectSummaries = expectedFileList.getObjectSummaries();
-        final List<DeleteObjectsRequest.KeyVersion> keys = new ArrayList<>(objectSummaries.size());
-        keys.addAll(objectSummaries.stream()
-                                   .map(objectSummary -> new DeleteObjectsRequest.KeyVersion(objectSummary.getKey()))
-                                   .toList());
-        deleteObjectsRequest.setKeys(keys);
-        return deleteObjectsRequest;
+        log.info("Deleting Objects in bucket {}", bucketName);
+        client.listObjectsV2Paginator(r -> r.bucket(bucketName))
+              .stream()
+              .forEach(obj -> {
+                  final List<S3Object> objectSummaries = obj.contents();
+                  log.debug("Creating delete objects request for {} objects", objectSummaries.size());
+                  final List<ObjectIdentifier> deleteList = objectSummaries.stream()
+                                                                           .map(o -> ObjectIdentifier.builder()
+                                                                                                     .key(o.key())
+                                                                                                     .build())
+                                                                           .toList();
+                  client.deleteObjects(DeleteObjectsRequest.builder()
+                                                           .bucket(bucketName)
+                                                           .delete(r -> r.objects(deleteList))
+                                                           .build());
+                  log.debug("Delete objects request complete");
+              });
     }
 }

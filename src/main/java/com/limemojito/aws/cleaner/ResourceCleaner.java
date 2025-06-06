@@ -17,7 +17,7 @@
 
 package com.limemojito.aws.cleaner;
 
-import com.limemojito.aws.cleaner.resource.PhysicalDeletionFilter;
+import com.limemojito.aws.cleaner.filter.PhysicalDeletionFilter;
 import org.springframework.beans.factory.annotation.Autowired;
 
 /**

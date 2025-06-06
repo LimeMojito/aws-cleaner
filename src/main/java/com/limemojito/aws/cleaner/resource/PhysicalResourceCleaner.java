@@ -18,6 +18,7 @@
 package com.limemojito.aws.cleaner.resource;
 
 import com.limemojito.aws.cleaner.ResourceCleaner;
+import com.limemojito.aws.cleaner.filter.PhysicalDeletionFilter;
 import lombok.Getter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,13 +37,6 @@ public abstract class PhysicalResourceCleaner implements ResourceCleaner {
     private PhysicalDeletionFilter filter;
     @Getter
     private boolean commit;
-
-    /**
-     * Constructs a new PhysicalResourceCleaner with a default filter that allows deletion of all resources.
-     */
-    public PhysicalResourceCleaner() {
-        filter = physicalId -> true;
-    }
 
     /**
      * {@inheritDoc}

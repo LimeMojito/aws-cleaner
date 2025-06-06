@@ -17,22 +17,18 @@
 
 package com.limemojito.aws.cleaner.resource;
 
-import com.amazonaws.services.sns.AmazonSNS;
-import com.amazonaws.services.sns.model.ListSubscriptionsRequest;
-import com.amazonaws.services.sns.model.ListSubscriptionsResult;
-import com.amazonaws.services.sns.model.Subscription;
-import com.amazonaws.services.sns.model.Topic;
-import com.amazonaws.services.sqs.AmazonSQS;
-import com.amazonaws.services.sqs.model.GetQueueUrlRequest;
-import com.amazonaws.services.sqs.model.QueueDoesNotExistException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import software.amazon.awssdk.services.sns.SnsClient;
+import software.amazon.awssdk.services.sns.model.Subscription;
+import software.amazon.awssdk.services.sns.model.Topic;
+import software.amazon.awssdk.services.sqs.SqsClient;
+import software.amazon.awssdk.services.sqs.model.QueueDoesNotExistException;
 
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 import static com.limemojito.aws.cleaner.resource.Throttle.performWithThrottle;
 
@@ -48,9 +44,8 @@ public class SNSResourceCleaner extends PhysicalResourceCleaner {
     private static final int AWS_ACCOUNT_GROUP = 2;
     private static final int QUEUE_NAME_GROUP = 3;
     private final Pattern queueArnMatcher = Pattern.compile("^arn:aws:sqs:(.+?):(.+?):(.+)");
-    private final AmazonSNS client;
-    private final AmazonSQS sqs;
-
+    private final SnsClient sns;
+    private final SqsClient sqs;
 
     /**
      * {@inheritDoc}
@@ -60,14 +55,11 @@ public class SNSResourceCleaner extends PhysicalResourceCleaner {
     @Override
     public void clean() {
         super.clean();
-        // remove any dangling SQS subscriptions
-        ListSubscriptionsRequest listSubscriptionsRequest = new ListSubscriptionsRequest();
-        do {
-            ListSubscriptionsResult listSubscriptionsResult = client.listSubscriptions(listSubscriptionsRequest);
-            listSubscriptionsRequest.setNextToken(listSubscriptionsResult.getNextToken());
-            List<Subscription> subscriptions = listSubscriptionsResult.getSubscriptions();
-            subscriptions.forEach(this::removeSqsSubscription);
-        } while (listSubscriptionsRequest.getNextToken() != null);
+        log.debug("Cleaning SNS Subscriptions");
+        sns.listSubscriptionsPaginator()
+           .stream()
+           .flatMap(page -> page.subscriptions().stream())
+           .forEach(this::removeSqsSubscription);
     }
 
     /**
@@ -78,9 +70,12 @@ public class SNSResourceCleaner extends PhysicalResourceCleaner {
      */
     @Override
     protected List<String> getPhysicalResourceIds() {
-        return client.listTopics().getTopics().stream()
-                .map(Topic::getTopicArn)
-                .collect(Collectors.toList());
+        log.debug("Getting SNS Topics");
+        return sns.listTopicsPaginator()
+                  .stream()
+                  .flatMap(page -> page.topics().stream())
+                  .map(Topic::topicArn)
+                  .toList();
     }
 
     /**
@@ -93,25 +88,26 @@ public class SNSResourceCleaner extends PhysicalResourceCleaner {
     @Override
     protected void performDelete(String physicalId) {
         log.info("Deleting Topic {} and all subscriptions", physicalId);
-        client.listSubscriptionsByTopic(physicalId)
-                .getSubscriptions()
-                .stream()
-                .map(Subscription::getSubscriptionArn)
-                .forEach(this::unsubscribe);
-        client.deleteTopic(physicalId);
+        sns.listSubscriptionsByTopicPaginator(r -> r.topicArn(physicalId))
+           .stream()
+           .flatMap(page -> page.subscriptions().stream())
+           .map(Subscription::subscriptionArn)
+           .forEach(this::unsubscribe);
+        sns.deleteTopic(r -> r.topicArn(physicalId));
     }
 
     private void removeSqsSubscription(Subscription subscription) {
-        log.debug("Checking {}", subscription.getSubscriptionArn());
-        if (getFilter().shouldDelete(subscription.getSubscriptionArn())
-                && "SQS".equalsIgnoreCase(subscription.getProtocol())) {
-            String queueArn = subscription.getEndpoint();
+        log.debug("Checking {}", subscription.subscriptionArn());
+        if (getFilter().shouldDelete(subscription.subscriptionArn())
+                && "SQS".equalsIgnoreCase(subscription.protocol())) {
+            String queueArn = subscription.endpoint();
             final Matcher matcher = queueArnMatcher.matcher(queueArn);
             if (matcher.matches()) {
                 try {
-                    performWithThrottle(() ->
-                                                sqs.getQueueUrl(new GetQueueUrlRequest(matcher.group(QUEUE_NAME_GROUP))
-                                                                        .withQueueOwnerAWSAccountId(matcher.group(AWS_ACCOUNT_GROUP))));
+                    final String qName = matcher.group(QUEUE_NAME_GROUP);
+                    final String owner = matcher.group(AWS_ACCOUNT_GROUP);
+                    performWithThrottle(() -> sqs.getQueueUrl(r -> r.queueName(qName)
+                                                                    .queueOwnerAWSAccountId(owner)));
                 } catch (QueueDoesNotExistException e) {
                     removeQueueSubscription(subscription);
                 }
@@ -122,20 +118,20 @@ public class SNSResourceCleaner extends PhysicalResourceCleaner {
     private void removeQueueSubscription(Subscription subscription) {
         if (isCommit()) {
             log.info("Removing dangling subscription {} to {}",
-                     subscription.getSubscriptionArn(),
-                     subscription.getEndpoint());
-            unsubscribe(subscription.getSubscriptionArn());
+                     subscription.subscriptionArn(),
+                     subscription.endpoint());
+            unsubscribe(subscription.subscriptionArn());
         } else {
             log.info("Would delete dangling subscription {} to {}",
-                     subscription.getSubscriptionArn(),
-                     subscription.getEndpoint());
+                     subscription.subscriptionArn(),
+                     subscription.endpoint());
         }
     }
 
     private void unsubscribe(String subArn) {
         performWithThrottle(() -> {
             log.info("Unsubscribe {}", subArn);
-            client.unsubscribe(subArn);
+            sns.unsubscribe(r -> r.subscriptionArn(subArn));
         });
     }
 }

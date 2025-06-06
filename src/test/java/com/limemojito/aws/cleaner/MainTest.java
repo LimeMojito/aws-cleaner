@@ -23,8 +23,8 @@ import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnit;
 import org.mockito.junit.MockitoRule;
 
-import static com.amazonaws.regions.Regions.US_WEST_2;
 import static java.util.Collections.singletonList;
+import static software.amazon.awssdk.regions.Region.US_WEST_2;
 
 public class MainTest {
 

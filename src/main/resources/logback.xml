@@ -21,9 +21,7 @@
         </encoder>
     </appender>
 
-    <logger name="com.limemojito" level="info" additivity="false">
-        <appender-ref ref="STDOUT"/>
-    </logger>
+    <logger name="com.limemojito" level="info"/>
 
     <root level="WARN">
         <appender-ref ref="STDOUT"/>
