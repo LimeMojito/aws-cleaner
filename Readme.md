@@ -1,4 +1,4 @@
-# AWS Cleaner version 7.1.0
+# AWS Cleaner version 7.1.2
 
 Note we are not responsible for any use of this application. Warranty is not expressed nor implied!  Use at your own
 risk.
@@ -29,7 +29,7 @@ Framework for adding your own cleaners as spring beans.
 Dry run by default.  Add --commit after the -jar To commit changes
 
 ```
-java -D.... -jar aws-cleaner-7.1.0.jar [--commit]
+java -D.... -jar aws-cleaner-7.1.2.jar [--commit]
 -Dcleaner.region=<region> to override AWS region.
 -Dcleaner.cloudformation.whitelist=<comma,separated,stack,name,prefixes> to keep named stacks.
 -Dcleaner.skip.names=<comma,separated,name,contains> to keep name containing resources.
@@ -46,7 +46,7 @@ java -D.... -jar aws-cleaner-7.1.0.jar [--commit]
 
 ### curl
 ```
-curl -O https://repo1.maven.org/maven2/com/limemojito/oss/aws/aws-cleaner/7.1.0/aws-cleaner-7.1.0.jar
+curl -O https://repo1.maven.org/maven2/com/limemojito/oss/aws/aws-cleaner/7.1.2/aws-cleaner-7.1.2.jar
 ```
 
 
@@ -56,7 +56,7 @@ curl -O https://repo1.maven.org/maven2/com/limemojito/oss/aws/aws-cleaner/7.1.0/
 <dependency>
   <groupId>com.limemojito.oss.aws</groupId>
   <artifactId>aws-cleaner</artifactId>
-  <version>7.1.0</version>
+  <version>7.1.2</version>
 </dependency>
 ```
 
@@ -64,6 +64,13 @@ curl -O https://repo1.maven.org/maven2/com/limemojito/oss/aws/aws-cleaner/7.1.0/
 ## Change log
              
 # 7
+
+### 7.1.2
+* Spring version and Library Vulnerability Updates
+* Correction to AWS elastic beanstalk error handling that now throws service level exceptions when EB is not available in a region.
+
+### 7.1.1
+* Spring version and Library Vulnerability Updates
 
 ### 7.1.0
 * Added name based exclusion of resource deletion to help with CDK and ad-hoc manual setups such as once of event bridge, etc.
