@@ -22,6 +22,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import software.amazon.awssdk.core.exception.SdkClientException;
 import software.amazon.awssdk.services.elasticbeanstalk.ElasticBeanstalkClient;
+import software.amazon.awssdk.services.elasticbeanstalk.model.ElasticBeanstalkServiceException;
 import software.amazon.awssdk.services.elasticbeanstalk.model.EnvironmentDescription;
 
 import java.util.Collections;
@@ -57,7 +58,7 @@ public class ElasticBeanstalkResourceCleaner extends PhysicalResourceCleaner {
                          .filter(environmentDescription -> environmentDescription.status() == READY)
                          .map(EnvironmentDescription::environmentName)
                          .collect(Collectors.toList());
-        } catch (SdkClientException e) {
+        } catch (SdkClientException | ElasticBeanstalkServiceException e) {
             log.warn("Could not communicate with elastic beanstalk: {}", e.getMessage(), e);
             return Collections.emptyList();
         }
