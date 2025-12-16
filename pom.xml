@@ -21,7 +21,7 @@
 
     <groupId>com.limemojito.oss.aws</groupId>
     <artifactId>aws-cleaner</artifactId>
-    <version>7.1.3-SNAPSHOT</version>
+    <version>8.0.0-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <parent>
@@ -39,7 +39,7 @@
         <coverage.line.ratio>0</coverage.line.ratio>
     </properties>
 
-    <name>AWS Cleaner</name>
+    <name>${project.artifactId}</name>
     <description>
         Eats an AWS account. You can specify whitelist for cloudformation stacks, and resources that are
         in a cloudformation stack will not be destroyed.

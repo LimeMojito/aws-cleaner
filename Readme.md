@@ -94,6 +94,11 @@ mvn versions:use-latest-releases -U
 ---
 
 # Change log
+
+# 8
+
+### 8.0.0
+* Spring Boot 4 and Java 25
              
 # 7
 
