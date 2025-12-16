@@ -1,4 +1,4 @@
-# AWS Cleaner version 7.1.2
+# AWS Cleaner version 8.0.0
 
 Note we are not responsible for any use of this application. Warranty is not expressed nor implied!  Use at your own
 risk.
@@ -29,7 +29,7 @@ Framework for adding your own cleaners as spring beans.
 Dry run by default.  Add --commit after the -jar To commit changes
 
 ```
-java -D.... -jar aws-cleaner-7.1.2.jar [--commit]
+java -D.... -jar aws-cleaner-8.0.0.jar [--commit]
 -Dcleaner.region=<region> to override AWS region.
 -Dcleaner.cloudformation.whitelist=<comma,separated,stack,name,prefixes> to keep named stacks.
 -Dcleaner.skip.names=<comma,separated,name,contains> to keep name containing resources.
@@ -46,7 +46,7 @@ java -D.... -jar aws-cleaner-7.1.2.jar [--commit]
 
 ### curl
 ```
-curl -O https://repo1.maven.org/maven2/com/limemojito/oss/aws/aws-cleaner/7.1.2/aws-cleaner-7.1.2.jar
+curl -O https://repo1.maven.org/maven2/com/limemojito/oss/aws/aws-cleaner/8.0.0/aws-cleaner-8.0.0.jar
 ```
 
 
@@ -56,7 +56,7 @@ curl -O https://repo1.maven.org/maven2/com/limemojito/oss/aws/aws-cleaner/7.1.2/
 <dependency>
   <groupId>com.limemojito.oss.aws</groupId>
   <artifactId>aws-cleaner</artifactId>
-  <version>7.1.2</version>
+  <version>8.0.0</version>
 </dependency>
 ```
 
