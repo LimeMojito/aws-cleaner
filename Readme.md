@@ -1,5 +1,8 @@
 # AWS Cleaner version 8.0.0
 
+## Latest Changes
+See [CHANGELOG.md](CHANGELOG.md)
+
 Note we are not responsible for any use of this application. Warranty is not expressed nor implied!  Use at your own
 risk.
 
