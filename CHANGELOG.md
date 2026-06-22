@@ -2,6 +2,9 @@
 
 # 8
 
+### 8.0.14
+* Updated versions and security patches.
+
 ### 8.0.13
 * Updated versions and security patches.
 
