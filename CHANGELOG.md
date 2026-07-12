@@ -2,6 +2,13 @@
 
 # 8
 
+### 8.0.15.37
+* Updated versions and security patches.
+* Add a fix for region in identity client.
+* Change GitHub Actions permissions from read to write.
+* Clarify cron schedule comment in workflow file.
+* Update cron schedule in maven-versions-update-check.yml.
+
 ### 8.0.14
 * Updated versions and security patches.
 
