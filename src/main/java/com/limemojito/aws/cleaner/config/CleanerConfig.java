@@ -143,9 +143,10 @@ public class CleanerConfig {
      * @return The AWS IAM client
      */
     @Bean(destroyMethod = "close")
-    public IamClient identityManagement(AwsCredentialsProvider credentialsProvider) {
+    public IamClient identityManagement(AwsCredentialsProvider credentialsProvider, Region region) {
         return IamClient.builder()
                         .credentialsProvider(credentialsProvider)
+                        .region(region)
                         .build();
     }
 
